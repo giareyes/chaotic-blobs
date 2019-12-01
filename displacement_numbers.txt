@@ -1,0 +1,214 @@
+STRETCH
+displacement at vertex 5 is (0.011446, 0.005271)
+displacement at vertex 6 is (0.004064, 0.009012)
+displacement at vertex 7 is (-0.004064, 0.009012)
+displacement at vertex 8 is (-0.011446, 0.005271)
+displacement at vertex 9 is (0.012217, 0.019461)
+displacement at vertex 10 is (0.000000, 0.022649)
+displacement at vertex 11 is (-0.012217, 0.019461)
+displacement at vertex 12 is (0.012745, 0.039573)
+displacement at vertex 13 is (-0.012745, 0.039573)
+displacement at vertex 15 is (0.008654, 0.003497)
+displacement at vertex 16 is (0.011032, 0.004048)
+displacement at vertex 17 is (0.015469, 0.003343)
+displacement at vertex 18 is (0.014198, 0.010418)
+displacement at vertex 19 is (-0.008654, 0.003498)
+displacement at vertex 20 is (-0.011032, 0.004048)
+displacement at vertex 21 is (-0.015469, 0.003343)
+displacement at vertex 22 is (-0.014198, 0.010418)
+
+
+SQUASH
+displacement at vertex 5 is (-0.002633, -0.001795)
+displacement at vertex 6 is (-0.000470, -0.001448)
+displacement at vertex 7 is (0.000470, -0.001448)
+displacement at vertex 8 is (0.002633, -0.001795)
+displacement at vertex 9 is (-0.003448, -0.005735)
+displacement at vertex 10 is (0.000000, -0.002830)
+displacement at vertex 11 is (0.003448, -0.005735)
+displacement at vertex 12 is (-0.008094, -0.011360)
+displacement at vertex 13 is (0.008094, -0.011360)
+displacement at vertex 15 is (-0.002118, -0.001276)
+displacement at vertex 16 is (-0.002679, -0.001544)
+displacement at vertex 17 is (-0.003856, -0.001598)
+displacement at vertex 18 is (-0.003726, -0.003566)
+displacement at vertex 19 is (0.002118, -0.001276)
+displacement at vertex 20 is (0.002679, -0.001544)
+displacement at vertex 21 is (0.003856, -0.001598)
+displacement at vertex 22 is (0.003726, -0.003566)
+
+
+LSHEAR
+displacement at vertex 5 is (-0.016704, -0.006527)
+displacement at vertex 6 is (-0.017430, -0.000137)
+displacement at vertex 7 is (-0.022485, 0.003981)
+displacement at vertex 8 is (-0.032098, 0.005844)
+displacement at vertex 9 is (-0.042263, -0.006665)
+displacement at vertex 10 is (-0.048845, 0.004947)
+displacement at vertex 11 is (-0.064138, 0.013395)
+displacement at vertex 12 is (-0.085459, -0.004205)
+displacement at vertex 13 is (-0.113785, 0.013985)
+displacement at vertex 15 is (-0.012365, -0.014071)
+displacement at vertex 16 is (-0.019256, -0.015372)
+displacement at vertex 17 is (-0.029304, -0.017875)
+displacement at vertex 18 is (-0.039106, -0.013914)
+displacement at vertex 19 is (-0.025727, 0.008843)
+displacement at vertex 20 is (-0.036220, 0.010157)
+displacement at vertex 21 is (-0.052425, 0.008649)
+displacement at vertex 22 is (-0.064256, 0.010963)
+
+
+RSHEAR
+displacement at vertex 5 is (0.032098, 0.005844)
+displacement at vertex 6 is (0.022485, 0.003981)
+displacement at vertex 7 is (0.017430, -0.000137)
+displacement at vertex 8 is (0.016704, -0.006527)
+displacement at vertex 9 is (0.064138, 0.013395)
+displacement at vertex 10 is (0.048845, 0.004947)
+displacement at vertex 11 is (0.042263, -0.006665)
+displacement at vertex 12 is (0.113785, 0.013985)
+displacement at vertex 13 is (0.085459, -0.004205)
+displacement at vertex 15 is (0.025727, 0.008843)
+displacement at vertex 16 is (0.036220, 0.010157)
+displacement at vertex 17 is (0.052425, 0.008649)
+displacement at vertex 18 is (0.064256, 0.010963)
+displacement at vertex 19 is (0.012365, -0.014071)
+displacement at vertex 20 is (0.019256, -0.015372)
+displacement at vertex 21 is (0.029304, -0.017875)
+displacement at vertex 22 is (0.039106, -0.013914)
+
+
+GRAVITY
+displacement at vertex 5 is (-0.009118, -0.015733)
+displacement at vertex 6 is (-0.002303, -0.011465)
+displacement at vertex 7 is (0.002303, -0.011465)
+displacement at vertex 8 is (0.009118, -0.015733)
+displacement at vertex 9 is (-0.005182, -0.022996)
+displacement at vertex 10 is (0.000000, -0.019589)
+displacement at vertex 11 is (0.005182, -0.022996)
+displacement at vertex 12 is (0.002792, -0.020846)
+displacement at vertex 13 is (-0.002792, -0.020846)
+displacement at vertex 15 is (-0.019616, -0.032046)
+displacement at vertex 16 is (-0.017551, -0.034182)
+displacement at vertex 17 is (-0.017910, -0.034542)
+displacement at vertex 18 is (-0.010398, -0.032107)
+displacement at vertex 19 is (0.019616, -0.032046)
+displacement at vertex 20 is (0.017551, -0.034182)
+displacement at vertex 21 is (0.017910, -0.034542)
+displacement at vertex 22 is (0.010398, -0.032107)
+
+LEFT FORCE
+displacement at vertex 5 is (-0.088559, -0.006542)
+displacement at vertex 6 is (-0.085461, -0.000642)
+displacement at vertex 7 is (-0.085461, 0.000642)
+displacement at vertex 8 is (-0.088559, 0.006542)
+displacement at vertex 9 is (-0.134988, -0.001420)
+displacement at vertex 10 is (-0.138178, 0.000000)
+displacement at vertex 11 is (-0.134988, 0.001420)
+displacement at vertex 12 is (-0.134270, 0.013096)
+displacement at vertex 13 is (-0.134270, -0.013096)
+displacement at vertex 15 is (-0.066554, -0.041551)
+displacement at vertex 16 is (-0.098034, -0.037453)
+displacement at vertex 17 is (-0.124694, -0.031420)
+displacement at vertex 18 is (-0.140364, -0.019283)
+displacement at vertex 19 is (-0.066554, 0.041551)
+displacement at vertex 20 is (-0.098034, 0.037453)
+displacement at vertex 21 is (-0.124694, 0.031420)
+displacement at vertex 22 is (-0.140364, 0.019283)
+
+LEFT FORCE 2
+displacement at vertex 5 is (-0.054865, -0.019406)
+displacement at vertex 6 is (-0.055144, -0.014926)
+displacement at vertex 7 is (-0.059079, -0.017255)
+displacement at vertex 8 is (-0.067503, -0.020597)
+displacement at vertex 9 is (-0.079721, -0.013228)
+displacement at vertex 10 is (-0.088842, -0.014737)
+displacement at vertex 11 is (-0.101219, -0.018808)
+displacement at vertex 12 is (-0.063082, 0.000750)
+displacement at vertex 13 is (-0.086941, -0.008899)
+
+displacement at vertex 15 is (-0.030756, -0.032057)
+
+displacement at vertex 16 is (-0.055586, -0.036060)
+displacement at vertex 17 is (-0.070971, -0.033724)
+displacement at vertex 18 is (-0.081399, -0.025475)
+displacement at vertex 19 is (-0.072897, -0.005429)
+displacement at vertex 20 is (-0.091957, -0.006969)
+displacement at vertex 21 is (-0.114055, -0.012945)
+displacement at vertex 22 is (-0.113929, -0.013573)
+
+RIGHT FORCE
+displacement at vertex 5 is (0.088559, 0.006542)
+displacement at vertex 6 is (0.085461, 0.000642)
+displacement at vertex 7 is (0.085461, -0.000642)
+displacement at vertex 8 is (0.088559, -0.006542)
+displacement at vertex 9 is (0.134988, 0.001420)
+displacement at vertex 10 is (0.138178, -0.000000)
+displacement at vertex 11 is (0.134988, -0.001420)
+displacement at vertex 12 is (0.134270, -0.013096)
+displacement at vertex 13 is (0.134270, 0.013096)
+displacement at vertex 15 is (0.066554, 0.041551)
+displacement at vertex 16 is (0.098034, 0.037453)
+displacement at vertex 17 is (0.124694, 0.031420)
+displacement at vertex 18 is (0.140364, 0.019283)
+displacement at vertex 19 is (0.066554, -0.041551)
+displacement at vertex 20 is (0.098034, -0.037453)
+displacement at vertex 21 is (0.124694, -0.031420)
+displacement at vertex 22 is (0.140364, -0.019283)
+
+RIGHT FORCE 2
+displacement at vertex 5 is (0.067614, -0.021152)
+displacement at vertex 6 is (0.059172, -0.017341)
+displacement at vertex 7 is (0.055184, -0.014943)
+displacement at vertex 8 is (0.054882, -0.019407)
+displacement at vertex 9 is (0.101109, -0.019055)
+displacement at vertex 10 is (0.088817, -0.014741)
+displacement at vertex 11 is (0.079705, -0.013217)
+displacement at vertex 12 is (0.086800, -0.009037)
+displacement at vertex 13 is (0.063019, 0.000746)
+displacement at vertex 15 is (0.069918, -0.002250)
+displacement at vertex 16 is (0.091227, -0.005837)
+displacement at vertex 17 is (0.114063, -0.013374)
+displacement at vertex 18 is (0.113799, -0.013915)
+displacement at vertex 19 is (0.030760, -0.032057)
+displacement at vertex 20 is (0.055597, -0.036057)
+displacement at vertex 21 is (0.070974, -0.033711)
+displacement at vertex 22 is (0.081385, -0.025460)
+
+
+MATRIX:
+  STRETCH     SQUASH      LSHEAR      RSHEAR      GRAVITY     LFORCE      LFORCE2      RFORCE       RFORCE2
+ 0.011446,  -0.002633,  -0.016704,   0.032098,  -0.009118,  -0.054865,  -0.054865, -0.019406,
+ 0.005271,  -0.001795,  -0.006527,   0.005844,  -0.015733,  -0.019406,
+ 0.004064,  -0.000470,  -0.017430,   0.022485,  -0.002303,  -0.085461,  -0.055144, -0.014926,
+ 0.009012,  -0.001448,  -0.000137,   0.003981,  -0.011465,  -0.000642,
+-0.004064,   0.000470,  -0.022485,   0.017430,   0.002303,  -0.085461,  -0.059079, -0.017255,
+ 0.009012,  -0.001448,   0.003981,  -0.000137,  -0.011465,   0.000642,
+-0.011446,   0.002633,  -0.032098,   0.016704,   0.009118,  -0.088559,  -0.067503, -0.020597,
+ 0.005271,  -0.001795,   0.005844,  -0.006527,  -0.015733,   0.006542,
+ 0.012217,  -0.003448,  -0.042263,   0.064138,  -0.005182,  -0.134988,  -0.079721, -0.013228,
+ 0.019461,  -0.005735,  -0.006665,   0.013395,  -0.022996,  -0.001420,
+ 0.000000,   0.000000,  -0.048845,   0.048845,   0.000000,  -0.138178,  -0.088842, -0.014737,
+ 0.022649,  -0.002830,   0.004947,   0.004947,  -0.019589,   0.000000,
+-0.012217,   0.003448,  -0.064138,   0.042263,   0.005182,  -0.134988,  -0.101219, -0.018808,
+ 0.019461,  -0.005735,   0.013395,  -0.006665,  -0.022996,   0.001420,
+ 0.012745,  -0.008094,  -0.085459,   0.113785,   0.002792,  -0.134270,  -0.063082, 0.000750,
+ 0.039573,  -0.011360,  -0.004205,   0.013985,  -0.020846,   0.013096,
+-0.012745,   0.008094,  -0.113785,   0.085459,  -0.002792,  -0.134270,  -0.086941, -0.008899,
+ 0.039573,  -0.011360,   0.013985,  -0.004205,  -0.020846,  -0.013096,
+ 0.008654,  -0.002118,  -0.012365,   0.025727,  -0.019616,  -0.066554,  -0.030756, -0.032057,
+ 0.003497,  -0.001276,  -0.014071,   0.008843,  -0.032046,  -0.041551,
+ 0.011032,  -0.002679,  -0.019256,   0.036220,  -0.017551,  -0.098034,
+ 0.004048,  -0.001544,  -0.015372,   0.010157,  -0.034182,  -0.037453,
+ 0.015469,  -0.003856,  -0.029304,   0.052425,  -0.017910,  -0.124694,
+ 0.003343,  -0.001598,  -0.017875,   0.008649,  -0.034542,  -0.031420,
+ 0.014198,  -0.003726,  -0.039106,   0.064256,  -0.010398,  -0.140364,
+ 0.010418,  -0.003566,  -0.013914,   0.010963,  -0.032107,  -0.019283,
+-0.008654,   0.002118,  -0.025727,   0.012365,   0.019616,  -0.066554,
+ 0.003498,  -0.001276,   0.008843,  -0.014071,  -0.032046,   0.041551,
+-0.011032,   0.002679,  -0.036220,   0.019256,   0.017551,  -0.098034,
+ 0.004048,  -0.001544,   0.010157,  -0.015372,  -0.034182,   0.037453,
+-0.015469,   0.003856,  -0.052425,   0.029304,   0.017910,  -0.124694,
+ 0.003343,  -0.001598,   0.008649,  -0.017875,  -0.034542,   0.031420,
+-0.014198,   0.003726,  -0.064256,   0.039106,   0.010398,  -0.140364,
+ 0.010418,  -0.003566,   0.010963,  -0.013914,  -0.032107,   0.019283,
