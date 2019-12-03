@@ -19,16 +19,24 @@ public:
 
   bool stepQuasistatic();
 
+//----------------------------------------------------------
   // Euler's equation of motion
   void stepMotion(float dt, const VEC2& outerForce);
 
   // regular equation of motion
   void setMassMatrix();
 
+  // set U
+  void setBasisReduction();
   // void setVelocity();
+
+  void uToq();
+
+  void qTou();
 
   // D(u, u') = (alpha*M + beta*K(u))u'
   MATRIX dampingForce();
+//----------------------------------------------------------
 
   // advance the constrained nodes for the stretch test
   void stepStretchTest(const Real stretch);
@@ -67,6 +75,10 @@ private:
 
   // the displacement vector
   VECTOR _u;
+  VECTOR _q;
+
+  // change of basis matrix
+  MATRIX _U;
 
   // the force vector
   VECTOR _f;
