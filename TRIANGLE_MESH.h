@@ -76,6 +76,7 @@ private:
   // the displacement vector
   VECTOR _u;
   VECTOR _q;
+  VECTOR reduced_verts; // list of all the vertices that are used in the reduced 
 
   // change of basis matrix
   MATRIX _U;

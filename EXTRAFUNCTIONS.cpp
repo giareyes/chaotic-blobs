@@ -36,6 +36,17 @@ void printMatrix(MATRIX matrix)
   }
 }
 
+void printVector(VECTOR vec)
+{
+  int size = vec.size();
+  printf("( ");
+  for(int i =0; i < size; i++)
+  {
+    printf("%f ", vec[i]);
+  }
+  printf(")\n");
+}
+
 //double contraction function for 2 same sized matrices
 Real doubleContraction(MATRIX m1, MATRIX m2)
 {

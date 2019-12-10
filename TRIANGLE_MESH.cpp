@@ -192,6 +192,8 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   VECTOR zeros(_DOFs);
   VECTOR z2(_U.cols());
 
+  z2.setZero();
+
   zeros.setZero();
   _u          = zeros;
   _q          = z2;
@@ -291,8 +293,11 @@ void TRIANGLE_MESH::setBasisReduction()
      0.010418,  -0.003566,   0.010963,  -0.013914,  -0.032107,   0.019283,  -0.013573,   -0.019283,    -0.025460;
 
   JacobiSVD<MatrixXd> svd( U, ComputeFullV | ComputeFullU );
-  svddiag = svddiag*svd.singularValues().asDiagonal();
+  svddiag = svd.matrixU();
+  svddiag.conservativeResize(svddiag.rows(),9);
   _U = svddiag;
+
+  U.resize(0,0);
 }
 
 void TRIANGLE_MESH::qTou()
@@ -438,6 +443,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 ///////////////////////////////////////////////////////////////////////
 bool TRIANGLE_MESH::stepQuasistatic()
 {
+  // printMatrix(_U); <---- _U is the same
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
   MATRIX K(_unconstrainedVertices.size()*2,_unconstrainedVertices.size()*2);
   MATRIX inverse;
@@ -446,35 +452,28 @@ bool TRIANGLE_MESH::stepQuasistatic()
   K.setZero();
   computeStiffnessMatrix(K);
 
-  //step 2: compute internal material forces, F
+  //step 2: compute internal material forces, R(uq)
   computeMaterialForces();
 
-  if(_vertices.size() == 3) //then we're in the single triangle case; print out K and f
-  {
-    printf("Stiffness matrix:\n");
-    printMatrix(K);
-    printf("Material forces vector: ( ");
-    for(int y = 0; y < _f.size(); y++)
-      printf("%f, ", _f[y]);
-    printf(")\n");
-  }
-  //step 3: external forces are already computed for us
-  //step 4: form the residual (r = F + E)
-  // VECTOR r = -1*(_f + _fExternal);
-  VECTOR r2 = _U.transpose() * -1*(_f + _fExternal);
+  // step 3: convert R(Uq) to R'
+  VECTOR reducedR = _U.transpose() * _f;
+
+  //step 4: external forces transform
+  VECTOR reducedF = _U.transpose() * _fExternal;
+
+  //step 5: form the residual (r = F + E)
+  VECTOR r2 = -1*(reducedR + reducedF);
+
   MATRIX k_reduced = _U.transpose() * (K * _U);
 
-  //step 5: compute x = K .inverse().eval()  * r
-  // inverse = K.inverse().eval();
+  //step 6: compute x = K .inverse().eval()  * r
   MATRIX inverse2 = k_reduced.inverse().eval();
   VECTOR x2 = inverse2*r2;
-  // VECTOR x = inverse*r;
 
   //step 6: add solution x to displacement vector _u
   _q += x2;
-  // _u += x;
   qTou();
-  
+
   //step 7: update all node positions w new displacement vector
   for(int x = 0; x < _unconstrainedVertices.size(); x++)
   {
@@ -482,7 +481,7 @@ bool TRIANGLE_MESH::stepQuasistatic()
     displacement[0] = _u[2*x];
     displacement[1] = _u[2*x + 1];
     _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
-    printf("displacement at vertex %d is (%f, %f)\n", _unconstrainedVertices[x], displacement[0], displacement[1]);
+    // printf("displacement at vertex %d is (%f, %f)\n", _unconstrainedVertices[x], displacement[0], displacement[1]);
   }
 
   //reset forces to 0
