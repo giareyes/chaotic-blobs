@@ -15,6 +15,7 @@
 
 #include "TRIANGLE_MESH.h"
 #include "STVK.h"
+#include "WALL.h"
 
 using namespace std;
 
@@ -129,6 +130,29 @@ void drawMesh(const VEC4& color1, const VEC4& color2)
   glEnd();
 }
 
+void drawWalls()
+{
+  vector<WALL>& walls = triangleMesh.walls();
+  // draw the walls
+  glColor4f(101.0/255,106.0/255,110.0/255,1);
+  for (unsigned int x = 0; x < walls.size(); x++)
+  {
+    glPushMatrix();
+      // translate to the point
+      glTranslatef(walls[x].point()[0], walls[x].point()[1], 0);
+
+      // apply a rotation
+      float angle = asin(walls[x].normal()[0]) / (2 * M_PI) * 360.0;
+      glRotatef(-angle, 0, 0, 1);
+
+      // make it a plane at 0,0
+      glTranslatef(0, -0.5, 0);
+      glScalef(50,1,1);
+      glutSolidCube(1.0);
+    glPopMatrix();
+  }
+  glFlush();
+}
 ///////////////////////////////////////////////////////////////////////
 // GL and GLUT callbacks
 ///////////////////////////////////////////////////////////////////////
@@ -154,6 +178,7 @@ void glutDisplay()
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   drawMesh(VEC4(213.0 / 255.0, 246.0 / 255, 247.0 / 255.0,1.0), VEC4(157.0 / 255.0, 230.0 / 255, 156.0 / 255.0,1.0));
+  drawWalls();
 
   glutSwapBuffers();
 }
@@ -375,6 +400,10 @@ void readCommandLine(int argc, char** argv)
   blob2.buildBlob(0.25);
   bodyForce[0] = 0.01;
   bodyForce[1] = 0;
+
+  triangleMesh.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
+  triangleMesh.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
+  triangleMesh.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
 }
 
 ///////////////////////////////////////////////////////////////////////

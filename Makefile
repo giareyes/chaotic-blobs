@@ -13,7 +13,7 @@ SOURCES    = blobs.cpp \
 						 TRIANGLE_MESH.cpp \
 						 TRIANGLE.cpp \
 						 EXTRAFUNCTIONS.cpp \
-						 MotionEquations.cpp
+						 WALL.cpp
 OBJECTS    = $(SOURCES:.cpp=.o)
 
 all: $(SOURCES) $(EXECUTABLE)

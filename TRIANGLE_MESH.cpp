@@ -36,7 +36,7 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   vector<VEC2> blobButt;
   for(int i = 0; i < 5; i++)
   {
-    VEC2 v0(xPos + 0.1*i, 0);
+    VEC2 v0(xPos + 0.1*i, -0.35);
     blobButt.push_back(v0);
     _vertices.push_back(v0);
     _restVertices.push_back(v0);
@@ -51,7 +51,7 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   {
     for(int i = 0; i < j; i++)
     {
-      VEC2 v0(base + i*0.1, (sqrt(3.0) / 20.0)*(scale-j));
+      VEC2 v0(base + i*0.1, (sqrt(3.0) / 20.0)*(scale-j) -0.35 );
       _vertices.push_back(v0);
       _restVertices.push_back(v0);
       (j == 1)? _constrainedVertices.push_back(vCount + i) : _unconstrainedVertices.push_back(vCount + i);
@@ -67,14 +67,14 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   {
     float y;
     y = (i == 2)? (sqrt(3.0) / 20.0) + (sqrt(3.0) / 40.0) : (sqrt(3.0) / 40.0) + (i*(sqrt(3.0) / 20.0)/(i+1));
-    VEC2 vo(xPos - 0.03 + (i+i)*0.01, y);
+    VEC2 vo(xPos - 0.03 + (i+i)*0.01, y -0.35 );
     _vertices.push_back(vo);
     _restVertices.push_back(vo);
     _unconstrainedVertices.push_back(vCount);
     vCount++;
   }
 
-  VEC2 vo(xPos + 0.05, (sqrt(3.0) / 20.0)*2);
+  VEC2 vo(xPos + 0.05, (sqrt(3.0) / 20.0)*2 -0.35);
   _vertices.push_back(vo);
   _restVertices.push_back(vo);
   _unconstrainedVertices.push_back(vCount);
@@ -85,14 +85,14 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   {
     float y;
     y = (i == 2)? (sqrt(3.0) / 20.0) + (sqrt(3.0) / 40.0) : (sqrt(3.0) / 40.0) + (i*(sqrt(3.0) / 20.0)/(i+1));
-    VEC2 vo2(xPos + 0.4 + 0.03 - (i+i)*0.01, y);
+    VEC2 vo2(xPos + 0.4 + 0.03 - (i+i)*0.01, y -0.35);
     _vertices.push_back(vo2);
     _restVertices.push_back(vo2);
     _unconstrainedVertices.push_back(vCount);
     vCount++;
   }
 
-  VEC2 vo2(xPos + 0.35, (sqrt(3.0) / 20.0)*2);
+  VEC2 vo2(xPos + 0.35, (sqrt(3.0) / 20.0)*2 -0.35);
   _vertices.push_back(vo2);
   _restVertices.push_back(vo2);
   _unconstrainedVertices.push_back(vCount);
@@ -189,7 +189,7 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   setBasisReduction();
   setMassMatrix();
 
-  VECTOR zeros(_DOFs);
+  VECTOR zeros(_vertices.size()*2);
   VECTOR z2(_U.cols());
 
   z2.setZero();
@@ -253,8 +253,8 @@ void TRIANGLE_MESH::setMassMatrix()
 
 void TRIANGLE_MESH::setBasisReduction()
 {
-  MATRIX U(34,9);
-  MATRIX svddiag(34, 9);
+  MATRIX U(46,9);
+  MATRIX svddiag(46, 9);
   svddiag.setIdentity();
   // matrix of deformations
   U << 0.011446,  -0.002633,  -0.016704,   0.032098,  -0.009118,  -0.054865,  -0.054865,    0.088559,     0.067614,
@@ -290,7 +290,19 @@ void TRIANGLE_MESH::setBasisReduction()
     -0.015469,   0.003856,  -0.052425,   0.029304,   0.017910,  -0.124694,  -0.114055,    0.124694,     0.070974,
      0.003343,  -0.001598,   0.008649,  -0.017875,  -0.034542,   0.031420,  -0.012945,   -0.031420,    -0.033711,
     -0.014198,   0.003726,  -0.064256,   0.039106,   0.010398,  -0.140364,  -0.113929,    0.140364,     0.081385,
-     0.010418,  -0.003566,   0.010963,  -0.013914,  -0.032107,   0.019283,  -0.013573,   -0.019283,    -0.025460;
+     0.010418,  -0.003566,   0.010963,  -0.013914,  -0.032107,   0.019283,  -0.013573,   -0.019283,    -0.025460,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
+     0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000;
 
   JacobiSVD<MatrixXd> svd( U, ComputeFullV | ComputeFullU );
   svddiag = svd.matrixU();
@@ -329,7 +341,7 @@ void TRIANGLE_MESH::stepShearTest(const Real shear)
   for (unsigned int x = 0; x < _constrainedVertices.size(); x++)
   {
     int right = _constrainedVertices[x];
-    if (_restVertices[right][1] > 0)
+    if (_restVertices[right][1] > -.35)
       _vertices[right][0] += shear;
   }
 }
@@ -342,7 +354,7 @@ void TRIANGLE_MESH::stepStretchTest(const Real stretch)
   for (unsigned int x = 0; x < _constrainedVertices.size(); x++)
   {
     int right = _constrainedVertices[x];
-    if (_restVertices[right][0] > 0.5)
+    if (_restVertices[right][0] > 0.15)
       _vertices[right][0] += stretch;
   }
 }
@@ -352,7 +364,7 @@ void TRIANGLE_MESH::stretch2(const Real stretch)
   for (unsigned int x = 0; x < _constrainedVertices.size(); x++)
   {
     int right = _constrainedVertices[x];
-    if (_restVertices[right][1] > 0)
+    if (_restVertices[right][1] > -.35)
       _vertices[right][1] += stretch;
   }
 }
@@ -366,7 +378,7 @@ void TRIANGLE_MESH::computeMaterialForces()
   //the global vector will be v= [f_0, f_1 ...] where each f_i = [x,y] (column vectors)
   //and forces are only for unconstrained vertices. This means the size of this vector is
   // size(unconstrained vertices)*2 since each has an x,y component
-  VECTOR global_vector(_unconstrainedVertices.size()*2);
+  VECTOR global_vector(_vertices.size()*2);
   global_vector.setZero();
 
   //loop through triangles, calculate force on each local point
@@ -406,38 +418,26 @@ void TRIANGLE_MESH::computeMaterialForces()
 // my attempt at writing a motion thing.... ignore for now.
 void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 {
-  //first find displacements of constrained vertices using velocity... figure out later
-  // vector<VEC2> oldVerts(_u.size());
-  // for(int i = 0; i < _u.size(); i++)
-  //   oldVerts[i] = _u[i];
-  //
-  // // then find u
-  // for(int i = 0; i < 5; i++)
-  // {
-  //   vector<VEC2> du(_unconstrainedVertices.size());
-  //
-  //   vector<VEC2> ddu(_unconstrainedVertices.size());
+  //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
+  MATRIX K(_vertices.size()*2,_vertices.size()*2);
+  MATRIX D(_vertices.size()*2,_vertices.size()*2);
+  float alpha = 0; // constant for damping
+  float beta = 0;  // constant for damping
 
-    // tiny time step
-    // for(int i = 0; i < _unconstrainedVertices.size(); i++)
-    // {
-    //   _u[i][0] = _vertices[_unconstrainedVertices[i]][0] + dt*(_velocity[0]);
-    //   _u[i][1] = _vertices[_unconstrainedVertices[i]][1] + dt*(_velocity[1]);
-    // }
-    //
-    // for(int i = 0; i < _unconstrainedVertices.size(); i++)
-    // {
-    //   du[i][0] = (_u[i][0] - oldVerts[i][0])/dt;
-    //   du[i][1] = (_u[i][1] - oldVerts[i][1])/dt;
-    // }
-    //
-    // for(int i = 0; i < _unconstrainedVertices.size(); i++)
-    // {
-    //   ddu[i][0] = (du[i][0] - oldVerts[i][0])/dt;
-    //   ddu[i][1] = (du[i][1] - oldVerts[i][1])/dt;
-    // }
+  //step 1: compute K
+  K.setZero();
+  computeStiffnessMatrix(K);
+  MATRIX K_reduced = _U.transpose() * K * _U;
 
-  // }
+  // step 2: compute D
+  D.setZero();
+  D = alpha*_mass + beta*K;
+  MATRIX D_reduced = _U.transpose() * D * _U;
+  // step 3: compute new M
+  MATRIX M_reduced = _U.transpose() * _mass * _U;
+  //step ?: compute internal material forces, R(uq)
+  // computeMaterialForces();
+
 }
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -445,9 +445,9 @@ bool TRIANGLE_MESH::stepQuasistatic()
 {
   // printMatrix(_U); <---- _U is the same
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
-  MATRIX K(_unconstrainedVertices.size()*2,_unconstrainedVertices.size()*2);
+  MATRIX K(_vertices.size()*2,_vertices.size()*2);
   MATRIX inverse;
-
+  // printf("size of k is %ld\n", _vertices.size()*2);
   //step 1: compute K
   K.setZero();
   computeStiffnessMatrix(K);
@@ -461,7 +461,7 @@ bool TRIANGLE_MESH::stepQuasistatic()
   //step 4: external forces transform
   VECTOR reducedF = _U.transpose() * _fExternal;
 
-  //step 5: form the residual (r = F + E)
+  // step 5: form the residual (r = F + E)
   VECTOR r2 = -1*(reducedR + reducedF);
 
   MATRIX k_reduced = _U.transpose() * (K * _U);
@@ -470,19 +470,27 @@ bool TRIANGLE_MESH::stepQuasistatic()
   MATRIX inverse2 = k_reduced.inverse().eval();
   VECTOR x2 = inverse2*r2;
 
-  //step 6: add solution x to displacement vector _u
+  //step 6: add solution x to displamcement vector _u
   _q += x2;
   qTou();
 
   //step 7: update all node positions w new displacement vector
-  for(int x = 0; x < _unconstrainedVertices.size(); x++)
+  int unconstrained = _unconstrainedVertices.size();
+  for(int x = 0; x < unconstrained; x++)
   {
     VEC2 displacement;
     displacement[0] = _u[2*x];
     displacement[1] = _u[2*x + 1];
     _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
-    // printf("displacement at vertex %d is (%f, %f)\n", _unconstrainedVertices[x], displacement[0], displacement[1]);
   }
+
+  // for(int x = 0; x < _constrainedVertices.size(); x++)
+  // {
+  //   VEC2 displacement;
+  //   displacement[0] = _u[2*unconstrained + 2*x];
+  //   displacement[1] = _u[2*unconstrained + 2*x + 1];
+  //   _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]] + displacement;
+  // }
 
   //reset forces to 0
   _fExternal.setZero();

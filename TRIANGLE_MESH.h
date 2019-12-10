@@ -4,6 +4,7 @@
 #include "SETTINGS.h"
 #include "TRIANGLE.h"
 #include "MATERIAL.h"
+#include "WALL.h"
 #include <vector>
 #include <map>
 
@@ -14,6 +15,8 @@ public:
   TRIANGLE_MESH(const Real poissonsRatio = 0.3, const Real youngsModulus = 1e6);
   ~TRIANGLE_MESH();
 
+  // add walls
+  void addWall(const WALL& wall)             { _walls.push_back(wall); };
   // build the different kinds of tests
   void buildBlob(const Real xPos);
 
@@ -55,6 +58,7 @@ public:
   const std::vector<TRIANGLE>& triangles() { return _triangles; };
   const std::vector<VEC2>& vertices() { return _vertices; };
   const std::vector<int>& constrainedVertices() { return _constrainedVertices; };
+  vector<WALL>& walls() { return _walls; };
 
 private:
   // scatter displacement u to the vertices
@@ -76,7 +80,7 @@ private:
   // the displacement vector
   VECTOR _u;
   VECTOR _q;
-  VECTOR reduced_verts; // list of all the vertices that are used in the reduced 
+  VECTOR reduced_verts; // list of all the vertices that are used in the reduced
 
   // change of basis matrix
   MATRIX _U;
@@ -88,6 +92,7 @@ private:
   // mass matrix
   MATRIX _mass;
   VECTOR _velocity;
+  VECTOR _acceleration;
 
   // the geometry
   std::vector<VEC2>   _vertices;
@@ -105,6 +110,9 @@ private:
 
   // the material
   MATERIAL* _material;
+
+  //walls
+  vector<WALL>     _walls;
 };
 
 #endif
