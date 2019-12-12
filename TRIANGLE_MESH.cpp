@@ -258,10 +258,12 @@ void TRIANGLE_MESH::setMassMatrix()
 void TRIANGLE_MESH::setBasisReduction()
 {
   MATRIX U(46,9);
+  MATRIX T(46,2);
   MATRIX svddiag(46, 9);
+  MATRIX intermediate(46, 11);
   svddiag.setIdentity();
   // matrix of deformations
-  U << 0.011446,  -0.002633,  -0.016704,   0.032098,  -0.009118,  -0.054865,  -0.054865,    0.088559,     0.067614,
+  U << 0.011446,  -0.002633,  -0.016704,   0.032098,  -0.009118,  -0.054865,  -0.054865,    0.088559,   0.067614,
      0.005271,  -0.001795,  -0.006527,   0.005844,  -0.015733,  -0.019406,  -0.019406,    0.006542,    -0.021152,
      0.004064,  -0.000470,  -0.017430,   0.022485,  -0.002303,  -0.085461,  -0.055144,    0.085461,     0.059172,
      0.009012,  -0.001448,  -0.000137,   0.003981,  -0.011465,  -0.000642,  -0.014926,    0.000642,    -0.017341,
@@ -308,12 +310,80 @@ void TRIANGLE_MESH::setBasisReduction()
      0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000,
      0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,   0.000000,    0.000000,     0.000000;
 
+     T << 1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000,
+          1.000000,  0.000000,
+          0.000000,  1.000000;
+
+  T = (1.0/pow(23.0, 0.5))*T;
+
+  // printMatrix(T);
+
   JacobiSVD<MatrixXd> svd( U, ComputeFullV | ComputeFullU );
   svddiag = svd.matrixU();
   svddiag.conservativeResize(svddiag.rows(),9);
+
+  intermediate.col(0) = T.col(0);
+  intermediate.col(1) = T.col(1);
+  for(int i = 2; i < 11; i++)
+  {
+    intermediate.col(i) = svddiag.col(i - 2);
+  }
+
+  // printf("intermediate matrix is: \n");
+  // printMatrix(intermediate);
+
+  JacobiSVD<MatrixXd> svd2( intermediate, ComputeFullV | ComputeFullU );
+
+  svddiag = svd2.matrixU();
+  svddiag.conservativeResize(svddiag.rows(),11);
   _U = svddiag;
 
   U.resize(0,0);
+  T.resize(0,0);
+  intermediate.resize(0,0);
 }
 
 void TRIANGLE_MESH::qTou()
@@ -435,26 +505,30 @@ void TRIANGLE_MESH::computeMaterialForces()
 // my attempt at writing a motion thing.... ignore for now.
 void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 {
-  printf("motion\n");
+  // printf("motion\n");
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
   MATRIX K(_vertices.size()*2,_vertices.size()*2);
   MATRIX D(_vertices.size()*2,_vertices.size()*2);
   MATRIX inverse;
-  float alpha = 0; // constant for damping
-  float beta = 0;  // constant for damping
+  float alpha = 0;//0.01; // constant for damping
+  float beta = 0;//0.02;  // constant for damping
 
   // gv = h1h2(sum f - d(sum mu*de/dt)/dt = sum gamma*x;
-  VECTOR gv = _fExternal - _U*_ra;
-  _velocity += dt*gv;
-
+  // VECTOR gv = _fExternal - _U*_ra;
+  // VECTOR v2 = _velocity + dt*gv;
   // printVector(_velocity);
-  // update rest vertices
-  for(int i = 0; i < _vertices.size(); i++)
-  {
-    _restVertices[i][0] += dt*_velocity[2*i];
-    _restVertices[i][1] += dt*_velocity[2*i + 1];
-  }
+  // // update rest vertices
+  // for(int i = 0; i < _vertices.size(); i++)
+  // {
+  //   _acceleration[2*i] = (v2[2*i] - _velocity[2*i])/dt;
+  //   _acceleration[2*i + 1] = (v2[2*i + 1] - _velocity[2*i + 1])/dt;
+  //   _velocity[2*i] = v2[2*i];
+  //   _velocity[2*i + 1] = v2[2*i + 1];
+  //   _restVertices[i][0] += dt*v2[2*i];
+  //   _restVertices[i][1] += dt*v2[2*i + 1];
+  // }
 
+  // Newton Raphson Iteration, but j-max is 1 so no need to write the loop
   //step 1: compute K
   K.setZero();
   computeStiffnessMatrix(K);
@@ -471,22 +545,28 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   // step 3: compute new M
   MATRIX M_reduced = _U.transpose() * _mass * _U;
 
-  // step 4: calculate f_external, for now its just gravity
-  // addBodyForce(VEC2(0, -0.02)); // f_i
+  // step 4: calculate f_external
   VECTOR reducedF = _U.transpose() * _fExternal;
-  // VECTOR f_i2(reducedF.size());
-  // f_i2 = reducedF; // for now its just gravity
 
-  // // step 5: solve the equations
-  VECTOR rightSolve = (3.0*M_reduced + (dt/2.0)*D_reduced)*_ra + ((6.0/dt)*M_reduced +3.0*D_reduced)*_rv; // + f_i2 - reducedF ;
-  MATRIX leftMatrix = (6.0/pow(dt, 2))*M_reduced + (3.0/dt)*D_reduced + K_reduced;
+  // step 5: compute R(q+1)
+  computeMaterialForces();
+  VECTOR reducedR = _U.transpose() * _f;
+
+  // step 6: calculate a1 - a6 with beta = 0.25 and gamma = 0.5
+  float a1 = 1.0 / (0.25 * pow(dt, 2));
+  float a2 = 1.0 / (0.25 * dt);
+  float a3 = (1.0 - 2*0.25) / (2*0.25);
+  float a4 = 0.5 / (0.25*dt);
+  float a5 = 1.0 - (0.5/0.25);
+  float a6 = (1.0 - (0.5/(2*0.25)))*dt;
+
+  // step 7: solve the equations
+  VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv + reducedR - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
+  MATRIX leftMatrix = a1*M_reduced + a4*D_reduced + K_reduced;
   inverse = leftMatrix.inverse().eval();
 
   VECTOR dq = inverse*rightSolve;
-  // printf("right solve: \n");
-  // printVector(rightSolve);
-  // printf("left matrix:\n");
-  // printMatrix(leftMatrix);
+
   // free space
   leftMatrix.resize(0,0);
   inverse.resize(0,0);
@@ -494,13 +574,14 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   // printf("displacement was: \n");
   // printVector(dq);
   // step 6: update q and u
+  // _q = dq;
   _q += dq;
 
   // printVector(_q);
 
   qTou();
 
-  //step 7: update all node positions w new displacement vector
+  // step 8: update all node positions w new displacement vector
   int unconstrained = _unconstrainedVertices.size();
   for(int x = 0; x < unconstrained; x++)
   {
@@ -515,25 +596,15 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
     VEC2 displacement;
     displacement[0] = _u[2*unconstrained + 2*x];
     displacement[1] = _u[2*unconstrained + 2*x + 1];
-    _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]] + displacement;
+    _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]]+ displacement;
   }
 
-  //step 8: calculate reduced velocity at new step
-  // printf("velocity was: \n");
-  // printVector(_rv);
-  _rv = -2.0*_rv - (dt/2.0)*_ra + (3.0/dt)*dq;
+  // step 9: calculate velocity and accleration
+  VECTOR newVel = a4*dq + a5*_rv + a6*_ra;
+  _ra = a1*dq - a2*_rv - a3*_ra;
+  _rv = newVel;
 
-  // printf("after:\n");
-  // printVector(_rv);
-  //
-  // printf("u is : \n");
-  // printVector(_u);
-  //step 9: calculate internal forces at t+1
-  computeMaterialForces();
-  VECTOR reducedR = _U.transpose() * _f;
-
-  //step 10: update
-  _ra = -1*M_reduced.inverse().eval()*(D_reduced*_rv + K_reduced*_q + reducedR); //- reducedF);
+  _fExternal.setZero();
 
 }
 ///////////////////////////////////////////////////////////////////////

@@ -37,7 +37,7 @@ int mouseModifiers = -1;
 bool animate = false;
 bool singleStep = false;
 // float dt = 1.0/15360.0;
-float dt = 1.0/10.0;
+float dt = 1.0/100.0;
 
 // the current viewer eye position
 VEC3 eyeCenter(0.9, 0.6, 1);
@@ -329,11 +329,17 @@ void glutIdle()
         break;
       case HANG:
       case SINGLE:
-        // triangleMesh.addBodyForce(bodyForce);
-        // blob2.addBodyForce(bodyForce);
+        triangleMesh.addBodyForce(bodyForce);
+        blob2.addBodyForce(bodyForce);
         break;
     }
 
+    if (frame == 0) // if we are on the first frame, insert a force so they jump
+    {
+      printf("in first frame\n");
+      triangleMesh.addBodyForce(VEC2(0.0, 75.0));
+      blob2.addBodyForce(VEC2(0.0, 75.0));
+    }
     // triangleMesh.stepQuasistatic();
     // blob2.stepQuasistatic();
     triangleMesh.stepMotion(dt, bodyForce);
@@ -431,7 +437,7 @@ void readCommandLine(int argc, char** argv)
   triangleMesh.buildBlob(1.15);
   blob2.buildBlob(0.25);
   bodyForce[0] = 0;
-  bodyForce[1] = -0.2;
+  bodyForce[1] = -0.3;
 
   triangleMesh.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
   triangleMesh.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
@@ -440,12 +446,8 @@ void readCommandLine(int argc, char** argv)
   blob2.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
   blob2.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
 
-  triangleMesh.setVelocity(VEC2(0.0, 0.5 ));
-  blob2.setVelocity(VEC2(0.0, 0.5 ));
-
-  triangleMesh.addBodyForce(bodyForce);
-  blob2.addBodyForce(bodyForce);
-
+  // triangleMesh.setVelocity(VEC2(0.0, 0.5 ));
+  // blob2.setVelocity(VEC2(0.0, 0.5 ));
 
 }
 
