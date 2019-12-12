@@ -195,10 +195,14 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   z2.setZero();
 
   zeros.setZero();
-  _u          = zeros;
-  _q          = z2;
-  _f          = zeros;
-  _fExternal  = zeros;
+  _u            = zeros;
+  _q            = z2;
+  _ra           = z2;
+  _rv           = z2;
+  _f            = zeros;
+  _fExternal    = zeros;
+  _acceleration = zeros;
+  _velocity     = zeros;
 
   // compute the reverse lookup
   computeVertexToIndexTable();
@@ -244,7 +248,7 @@ void TRIANGLE_MESH::uGather()
 void TRIANGLE_MESH::setMassMatrix()
 {
   // matrix of size 2Nx2N
-  MATRIX M(_unconstrainedVertices.size()*2,_unconstrainedVertices.size()*2);
+  MATRIX M(_vertices.size()*2,_vertices.size()*2);
 
   //for now we will make every vertex has mass 1
   M.setIdentity();
@@ -316,11 +320,25 @@ void TRIANGLE_MESH::qTou()
 {
   _u = _U * _q;
 }
-// void TRIANGLE_MESH::setVelocity(const VEC2& v)
-// {
-//   _velocity[0] = v[0];
-//   _velocity[1] = v[1];
-// }
+void TRIANGLE_MESH::setVelocity(const VEC2& v)
+{
+  for (unsigned int x = 0; x < _velocity.size() / 2; x++)
+  {
+    _velocity[2*x] = v[0];
+    _velocity[2*x + 1] = v[1];
+  }
+
+
+}
+
+void TRIANGLE_MESH::setAcceleration(const VEC2& a)
+{
+  for (unsigned int x = 0; x < _acceleration.size() / 2; x++)
+  {
+    _acceleration[2*x] = a[0];
+    _acceleration[2*x + 1] = a[1];
+  }
+}
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -332,7 +350,6 @@ void TRIANGLE_MESH::addBodyForce(const VEC2& bodyForce)
     _fExternal[2 * x + 1] += bodyForce[1];
   }
 }
-
 ///////////////////////////////////////////////////////////////////////
 // advance the constrained nodes for the shear test
 ///////////////////////////////////////////////////////////////////////
@@ -418,11 +435,25 @@ void TRIANGLE_MESH::computeMaterialForces()
 // my attempt at writing a motion thing.... ignore for now.
 void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 {
+  printf("motion\n");
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
   MATRIX K(_vertices.size()*2,_vertices.size()*2);
   MATRIX D(_vertices.size()*2,_vertices.size()*2);
+  MATRIX inverse;
   float alpha = 0; // constant for damping
   float beta = 0;  // constant for damping
+
+  // gv = h1h2(sum f - d(sum mu*de/dt)/dt = sum gamma*x;
+  VECTOR gv = _fExternal - _U*_ra;
+  _velocity += dt*gv;
+
+  // printVector(_velocity);
+  // update rest vertices
+  for(int i = 0; i < _vertices.size(); i++)
+  {
+    _restVertices[i][0] += dt*_velocity[2*i];
+    _restVertices[i][1] += dt*_velocity[2*i + 1];
+  }
 
   //step 1: compute K
   K.setZero();
@@ -430,13 +461,79 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   MATRIX K_reduced = _U.transpose() * K * _U;
 
   // step 2: compute D
-  D.setZero();
   D = alpha*_mass + beta*K;
   MATRIX D_reduced = _U.transpose() * D * _U;
+
+  // free space
+  K.resize(0,0);
+  D.resize(0,0);
+
   // step 3: compute new M
   MATRIX M_reduced = _U.transpose() * _mass * _U;
-  //step ?: compute internal material forces, R(uq)
-  // computeMaterialForces();
+
+  // step 4: calculate f_external, for now its just gravity
+  // addBodyForce(VEC2(0, -0.02)); // f_i
+  VECTOR reducedF = _U.transpose() * _fExternal;
+  // VECTOR f_i2(reducedF.size());
+  // f_i2 = reducedF; // for now its just gravity
+
+  // // step 5: solve the equations
+  VECTOR rightSolve = (3.0*M_reduced + (dt/2.0)*D_reduced)*_ra + ((6.0/dt)*M_reduced +3.0*D_reduced)*_rv; // + f_i2 - reducedF ;
+  MATRIX leftMatrix = (6.0/pow(dt, 2))*M_reduced + (3.0/dt)*D_reduced + K_reduced;
+  inverse = leftMatrix.inverse().eval();
+
+  VECTOR dq = inverse*rightSolve;
+  // printf("right solve: \n");
+  // printVector(rightSolve);
+  // printf("left matrix:\n");
+  // printMatrix(leftMatrix);
+  // free space
+  leftMatrix.resize(0,0);
+  inverse.resize(0,0);
+
+  // printf("displacement was: \n");
+  // printVector(dq);
+  // step 6: update q and u
+  _q += dq;
+
+  // printVector(_q);
+
+  qTou();
+
+  //step 7: update all node positions w new displacement vector
+  int unconstrained = _unconstrainedVertices.size();
+  for(int x = 0; x < unconstrained; x++)
+  {
+    VEC2 displacement;
+    displacement[0] = _u[2*x];
+    displacement[1] = _u[2*x + 1];
+    _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
+  }
+
+  for(int x = 0; x < _constrainedVertices.size(); x++)
+  {
+    VEC2 displacement;
+    displacement[0] = _u[2*unconstrained + 2*x];
+    displacement[1] = _u[2*unconstrained + 2*x + 1];
+    _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]] + displacement;
+  }
+
+  //step 8: calculate reduced velocity at new step
+  // printf("velocity was: \n");
+  // printVector(_rv);
+  _rv = -2.0*_rv - (dt/2.0)*_ra + (3.0/dt)*dq;
+
+  // printf("after:\n");
+  // printVector(_rv);
+  //
+  // printf("u is : \n");
+  // printVector(_u);
+  //step 9: calculate internal forces at t+1
+  computeMaterialForces();
+  VECTOR reducedR = _U.transpose() * _f;
+
+  //step 10: update
+  _ra = -1*M_reduced.inverse().eval()*(D_reduced*_rv + K_reduced*_q + reducedR); //- reducedF);
 
 }
 ///////////////////////////////////////////////////////////////////////
@@ -483,14 +580,16 @@ bool TRIANGLE_MESH::stepQuasistatic()
     displacement[1] = _u[2*x + 1];
     _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
   }
+  printf("displacements: \n");
+  printVector(_u);
 
-  // for(int x = 0; x < _constrainedVertices.size(); x++)
-  // {
-  //   VEC2 displacement;
-  //   displacement[0] = _u[2*unconstrained + 2*x];
-  //   displacement[1] = _u[2*unconstrained + 2*x + 1];
-  //   _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]] + displacement;
-  // }
+  for(int x = 0; x < _constrainedVertices.size(); x++)
+  {
+    VEC2 displacement;
+    displacement[0] = _u[2*unconstrained + 2*x];
+    displacement[1] = _u[2*unconstrained + 2*x + 1];
+    _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]] + displacement;
+  }
 
   //reset forces to 0
   _fExternal.setZero();

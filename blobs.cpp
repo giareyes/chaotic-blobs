@@ -36,7 +36,8 @@ int mouseModifiers = -1;
 // animate the current runEverytime()?
 bool animate = false;
 bool singleStep = false;
-float dt = 1.0/15360.0;
+// float dt = 1.0/15360.0;
+float dt = 1.0/10.0;
 
 // the current viewer eye position
 VEC3 eyeCenter(0.9, 0.6, 1);
@@ -92,9 +93,9 @@ void drawMesh(const VEC4& color1, const VEC4& color2)
 
 
   // get vertices
-  const vector<VEC2>& vertices = triangleMesh.vertices();
+  vector<VEC2>& vertices = triangleMesh.vertices();
   const vector<int>& constrainedVertices = triangleMesh.constrainedVertices();
-  const vector<VEC2>& vertices2 = blob2.vertices();
+  vector<VEC2>& vertices2 = blob2.vertices();
   const vector<int>& constrainedVertices2 = blob2.constrainedVertices();
 
   //draw eyes
@@ -249,17 +250,46 @@ void glutMouseMotion(int x, int y)
     return;
   }
 
+  // printf("in mouse motion\n");
+
+  vector<VEC2>& vertices = triangleMesh.vertices();
+  vector<int>& unconstrainedVertices = triangleMesh.unconstrainedVertices();
+  vector<VEC2>& vertices2 = blob2.vertices();
+  vector<int>& unconstrainedVertices2 = blob2.unconstrainedVertices();
+
   float xDiff = x - xMouse;
   float yDiff = y - yMouse;
   float speed = 0.001;
 
   if (mouseButton == GLUT_LEFT_BUTTON)
   {
-    eyeCenter[0] -= xDiff * speed;
-    eyeCenter[1] += yDiff * speed;
+    // TO DO: right now x and y are in viewspace coordiantes. must convert!!!
+
+    // printf("x is: %f\n", (double)x);
+    // printf("y is: %f\n", (double)y);
+    // printf("xMouse is: %f\n", (double)xMouse);
+    // printf("yMouse is: %f\n", (double)yMouse);
+    // eyeCenter[0] -= xDiff * speed;
+    // eyeCenter[1] += yDiff * speed;
+    for (int i = 0; i < unconstrainedVertices.size(); i++)
+    {
+      if (xMouse == vertices[unconstrainedVertices[i]][0] && yMouse == vertices[unconstrainedVertices[i]][1])
+      {
+        printf("x on vertex\n");
+        vertices[unconstrainedVertices[i]][0] = x;
+        vertices[unconstrainedVertices[i]][1] = y;
+      }
+
+      if (xMouse == vertices2[unconstrainedVertices2[i]][0] && yMouse == vertices2[unconstrainedVertices2[i]][1])
+      {
+        printf("x on vertex2\n");
+        vertices2[unconstrainedVertices2[i]][0] = x;
+        vertices2[unconstrainedVertices2[i]][1] = y;
+      }
+    }
   }
-  if (mouseButton == GLUT_RIGHT_BUTTON)
-    zoom -= yDiff * speed;
+  // if (mouseButton == GLUT_RIGHT_BUTTON)
+  //   zoom -= yDiff * speed;
 
   xMouse = x;
   yMouse = y;
@@ -299,13 +329,15 @@ void glutIdle()
         break;
       case HANG:
       case SINGLE:
-        triangleMesh.addBodyForce(bodyForce);
-        blob2.addBodyForce(bodyForce);
+        // triangleMesh.addBodyForce(bodyForce);
+        // blob2.addBodyForce(bodyForce);
         break;
     }
 
-    triangleMesh.stepQuasistatic();
-    blob2.stepQuasistatic();
+    // triangleMesh.stepQuasistatic();
+    // blob2.stepQuasistatic();
+    triangleMesh.stepMotion(dt, bodyForce);
+    blob2.stepMotion(dt, bodyForce);
     frame++;
 
     if (singleStep)
@@ -398,12 +430,23 @@ void readCommandLine(int argc, char** argv)
   // build the scene
   triangleMesh.buildBlob(1.15);
   blob2.buildBlob(0.25);
-  bodyForce[0] = 0.01;
-  bodyForce[1] = 0;
+  bodyForce[0] = 0;
+  bodyForce[1] = -0.2;
 
   triangleMesh.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
   triangleMesh.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
   triangleMesh.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
+  blob2.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
+  blob2.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
+  blob2.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
+
+  triangleMesh.setVelocity(VEC2(0.0, 0.5 ));
+  blob2.setVelocity(VEC2(0.0, 0.5 ));
+
+  triangleMesh.addBodyForce(bodyForce);
+  blob2.addBodyForce(bodyForce);
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////

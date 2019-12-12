@@ -37,8 +37,10 @@ public:
 
   void qTou();
 
-  // D(u, u') = (alpha*M + beta*K(u))u'
-  MATRIX dampingForce();
+  void setVelocity(const VEC2& v);
+
+  void setAcceleration(const VEC2& a);
+
 //----------------------------------------------------------
 
   // advance the constrained nodes for the stretch test
@@ -56,7 +58,9 @@ public:
 
   const int DOFs() { return _DOFs; };
   const std::vector<TRIANGLE>& triangles() { return _triangles; };
-  const std::vector<VEC2>& vertices() { return _vertices; };
+  std::vector<VEC2>& vertices() { return _vertices; };
+  std::vector<int>& unconstrainedVertices() { return _unconstrainedVertices; };
+  void setDisplacement(int index, float d) { _u[index] = d; };
   const std::vector<int>& constrainedVertices() { return _constrainedVertices; };
   vector<WALL>& walls() { return _walls; };
 
@@ -91,8 +95,14 @@ private:
 
   // mass matrix
   MATRIX _mass;
+
+  // velocity and acceleration
   VECTOR _velocity;
   VECTOR _acceleration;
+
+  // reduced velocity and accleration
+  VECTOR _rv;
+  VECTOR _ra;
 
   // the geometry
   std::vector<VEC2>   _vertices;
