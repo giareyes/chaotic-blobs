@@ -203,6 +203,7 @@ void TRIANGLE_MESH::buildBlob(const Real xPos)
   _fExternal    = zeros;
   _acceleration = zeros;
   _velocity     = zeros;
+  _flag         = 0;
 
   // compute the reverse lookup
   computeVertexToIndexTable();
@@ -369,21 +370,23 @@ void TRIANGLE_MESH::setBasisReduction()
   intermediate.col(1) = T.col(1);
   for(int i = 2; i < 11; i++)
   {
-    intermediate.col(i) = svddiag.col(i - 2);
+    intermediate.col(i) = svddiag.col(i - 2) - (T.col(0).transpose()*svddiag.col(i - 2))*T.col(0);
+    intermediate.col(i) = intermediate.col(i) - (T.col(1).transpose()*intermediate.col(i))*T.col(1);
   }
 
-  // printf("intermediate matrix is: \n");
-  // printMatrix(intermediate);
+  printf("intermediate matrix is: \n");
+  printMatrix(intermediate);
 
-  JacobiSVD<MatrixXd> svd2( intermediate, ComputeFullV | ComputeFullU );
-
-  svddiag = svd2.matrixU();
-  svddiag.conservativeResize(svddiag.rows(),11);
-  _U = svddiag;
+  _U = intermediate;
+  // JacobiSVD<MatrixXd> svd2( intermediate, ComputeFullV | ComputeFullU );
+  //
+  // svddiag = svd2.matrixU();
+  // svddiag.conservativeResize(svddiag.rows(),11);
+  // _U = svddiag;
 
   U.resize(0,0);
   T.resize(0,0);
-  intermediate.resize(0,0);
+  // intermediate.resize(0,0);
 }
 
 void TRIANGLE_MESH::qTou()
@@ -501,10 +504,41 @@ void TRIANGLE_MESH::computeMaterialForces()
   //store global vector into _f
   _f = global_vector;
 }
+// collision detection
+void TRIANGLE_MESH::checkCollision()
+{
+  float kw = 100; // spring constant of wall
+  float l = 0.1; // dampening force constant
 
-// my attempt at writing a motion thing.... ignore for now.
+  for(unsigned int y = 0; y < _walls.size(); y++)
+  {
+    float diffy =  _walls[y].point()[1] - (_vertices[_constrainedVertices[0]][1]);
+    if(diffy >= 0 && _walls[y].point()[1] != 0) // did it hit the floor?
+    {
+      if (_flag != 1)
+      {
+        printf("hit the floor!, flag is: %d \n", _flag);
+        addBodyForce( kw * diffy * _walls[y].normal() ); //apply spring force of wall
+        _flag = 1;
+        // addBodyForce( l * _velocity[1] * _walls[y].normal() ); //apply dampening force
+      }
+      else
+      {
+        printf("should hit but flag isn't 0\n");
+      }
+    }
+    else
+    {
+      // printf("did not hit the floor, flag is %d \n", _flag);
+      _flag = 0;
+    }
+  }
+}
+
+// motion step using Euler Lagrange
 void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 {
+  //printf("_flag: %d\n", _flag);
   // printf("motion\n");
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
   MATRIX K(_vertices.size()*2,_vertices.size()*2);
@@ -513,44 +547,33 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   float alpha = 0;//0.01; // constant for damping
   float beta = 0;//0.02;  // constant for damping
 
-  // gv = h1h2(sum f - d(sum mu*de/dt)/dt = sum gamma*x;
-  // VECTOR gv = _fExternal - _U*_ra;
-  // VECTOR v2 = _velocity + dt*gv;
-  // printVector(_velocity);
-  // // update rest vertices
-  // for(int i = 0; i < _vertices.size(); i++)
-  // {
-  //   _acceleration[2*i] = (v2[2*i] - _velocity[2*i])/dt;
-  //   _acceleration[2*i + 1] = (v2[2*i + 1] - _velocity[2*i + 1])/dt;
-  //   _velocity[2*i] = v2[2*i];
-  //   _velocity[2*i + 1] = v2[2*i + 1];
-  //   _restVertices[i][0] += dt*v2[2*i];
-  //   _restVertices[i][1] += dt*v2[2*i + 1];
-  // }
+  checkCollision();
 
   // Newton Raphson Iteration, but j-max is 1 so no need to write the loop
   //step 1: compute K
   K.setZero();
   computeStiffnessMatrix(K);
-  MATRIX K_reduced = _U.transpose() * K * _U;
-
+  // MATRIX K_reduced = _U.transpose() * K * _U;
+  //
   // step 2: compute D
   D = alpha*_mass + beta*K;
-  MATRIX D_reduced = _U.transpose() * D * _U;
-
-  // free space
-  K.resize(0,0);
-  D.resize(0,0);
-
-  // step 3: compute new M
-  MATRIX M_reduced = _U.transpose() * _mass * _U;
-
-  // step 4: calculate f_external
-  VECTOR reducedF = _U.transpose() * _fExternal;
-
-  // step 5: compute R(q+1)
-  computeMaterialForces();
-  VECTOR reducedR = _U.transpose() * _f;
+  // MATRIX D_reduced = _U.transpose() * D * _U;
+  //
+  // // free space
+  // K.resize(0,0);
+  // D.resize(0,0);
+  //
+  // // step 3: compute new M
+  // MATRIX M_reduced = _U.transpose() * _mass * _U;
+  //
+  // // step 4: calculate f_external
+  // VECTOR reducedF = _U.transpose() * _fExternal;
+  //
+  // // step 5: compute R(q+1)
+  // computeMaterialForces();
+  // VECTOR reducedR = _U.transpose() * _f;
+  // printf("internal force is:\n");
+  // printVector(_f);
 
   // step 6: calculate a1 - a6 with beta = 0.25 and gamma = 0.5
   float a1 = 1.0 / (0.25 * pow(dt, 2));
@@ -561,25 +584,27 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   float a6 = (1.0 - (0.5/(2*0.25)))*dt;
 
   // step 7: solve the equations
-  VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv + reducedR - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
-  MATRIX leftMatrix = a1*M_reduced + a4*D_reduced + K_reduced;
+  // VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv + reducedR - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
+  // MATRIX leftMatrix = a1*M_reduced + a4*D_reduced + K_reduced;
+  // inverse = leftMatrix.inverse().eval();
+
+  VECTOR rightSolve = -1*((-1*a3*_mass + a6*D)*_acceleration + (-1*a2*_mass + a5*D)*_velocity + _f - _fExternal); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
+  MATRIX leftMatrix = a1*_mass + a4*D + K;
   inverse = leftMatrix.inverse().eval();
 
-  VECTOR dq = inverse*rightSolve;
+  // VECTOR dq = inverse*rightSolve;
+  VECTOR du = inverse*rightSolve;
 
   // free space
   leftMatrix.resize(0,0);
   inverse.resize(0,0);
 
-  // printf("displacement was: \n");
-  // printVector(dq);
   // step 6: update q and u
-  // _q = dq;
-  _q += dq;
+  // _q += dq;
+  // qTou();
 
-  // printVector(_q);
-
-  qTou();
+  // unreduced - for debugging
+  _u += du;
 
   // step 8: update all node positions w new displacement vector
   int unconstrained = _unconstrainedVertices.size();
@@ -600,11 +625,17 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   }
 
   // step 9: calculate velocity and accleration
-  VECTOR newVel = a4*dq + a5*_rv + a6*_ra;
-  _ra = a1*dq - a2*_rv - a3*_ra;
-  _rv = newVel;
+  // VECTOR newVel = a4*dq + a5*_rv + a6*_ra;
+  // _ra = a1*dq - a2*_rv - a3*_ra;
+  // _rv = newVel;
+
+  // step 9 - no reduction: for debugging
+  VECTOR newVel = a4*du + a5*_velocity + a6*_acceleration;
+  _acceleration = a1*du - a2*_velocity - a3*_acceleration;
+  _velocity = newVel;
 
   _fExternal.setZero();
+  _f.setZero();
 
 }
 ///////////////////////////////////////////////////////////////////////

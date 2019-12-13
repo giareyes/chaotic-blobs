@@ -46,8 +46,13 @@ VEC3 eyeCenter(0.9, 0.6, 1);
 float zoom = 2.0;
 
 //Real poissonsRatio = 0.0;
+// old:
 Real poissonsRatio = 0.4;
 Real youngsModulus = 1.0;
+
+// testing:
+// Real poissonsRatio = 0.4;
+// Real youngsModulus = 0.8;
 
 TRIANGLE_MESH triangleMesh(poissonsRatio, youngsModulus);
 TRIANGLE_MESH blob2(poissonsRatio, youngsModulus);

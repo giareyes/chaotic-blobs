@@ -41,6 +41,8 @@ public:
 
   void setAcceleration(const VEC2& a);
 
+  void checkCollision();
+
 //----------------------------------------------------------
 
   // advance the constrained nodes for the stretch test
@@ -123,6 +125,7 @@ private:
 
   //walls
   vector<WALL>     _walls;
+  int             _flag;
 };
 
 #endif
