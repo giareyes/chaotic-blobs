@@ -15,6 +15,7 @@
 
 #include "TRIANGLE_MESH.h"
 #include "STVK.h"
+#include "WALL.h"
 
 using namespace std;
 
@@ -35,7 +36,8 @@ int mouseModifiers = -1;
 // animate the current runEverytime()?
 bool animate = false;
 bool singleStep = false;
-float dt = 1.0/15360.0;
+// float dt = 1.0/15360.0;
+float dt = 1.0/100.0;
 
 // the current viewer eye position
 VEC3 eyeCenter(0.9, 0.6, 1);
@@ -44,8 +46,13 @@ VEC3 eyeCenter(0.9, 0.6, 1);
 float zoom = 2.0;
 
 //Real poissonsRatio = 0.0;
+// old:
 Real poissonsRatio = 0.4;
 Real youngsModulus = 1.0;
+
+// testing:
+// Real poissonsRatio = 0.4;
+// Real youngsModulus = 0.8;
 
 TRIANGLE_MESH triangleMesh(poissonsRatio, youngsModulus);
 TRIANGLE_MESH blob2(poissonsRatio, youngsModulus);
@@ -91,9 +98,9 @@ void drawMesh(const VEC4& color1, const VEC4& color2)
 
 
   // get vertices
-  const vector<VEC2>& vertices = triangleMesh.vertices();
+  vector<VEC2>& vertices = triangleMesh.vertices();
   const vector<int>& constrainedVertices = triangleMesh.constrainedVertices();
-  const vector<VEC2>& vertices2 = blob2.vertices();
+  vector<VEC2>& vertices2 = blob2.vertices();
   const vector<int>& constrainedVertices2 = blob2.constrainedVertices();
 
   //draw eyes
@@ -129,6 +136,29 @@ void drawMesh(const VEC4& color1, const VEC4& color2)
   glEnd();
 }
 
+void drawWalls()
+{
+  vector<WALL>& walls = triangleMesh.walls();
+  // draw the walls
+  glColor4f(101.0/255,106.0/255,110.0/255,1);
+  for (unsigned int x = 0; x < walls.size(); x++)
+  {
+    glPushMatrix();
+      // translate to the point
+      glTranslatef(walls[x].point()[0], walls[x].point()[1], 0);
+
+      // apply a rotation
+      float angle = asin(walls[x].normal()[0]) / (2 * M_PI) * 360.0;
+      glRotatef(-angle, 0, 0, 1);
+
+      // make it a plane at 0,0
+      glTranslatef(0, -0.5, 0);
+      glScalef(50,1,1);
+      glutSolidCube(1.0);
+    glPopMatrix();
+  }
+  glFlush();
+}
 ///////////////////////////////////////////////////////////////////////
 // GL and GLUT callbacks
 ///////////////////////////////////////////////////////////////////////
@@ -154,6 +184,7 @@ void glutDisplay()
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   drawMesh(VEC4(213.0 / 255.0, 246.0 / 255, 247.0 / 255.0,1.0), VEC4(157.0 / 255.0, 230.0 / 255, 156.0 / 255.0,1.0));
+  drawWalls();
 
   glutSwapBuffers();
 }
@@ -224,17 +255,46 @@ void glutMouseMotion(int x, int y)
     return;
   }
 
+  // printf("in mouse motion\n");
+
+  vector<VEC2>& vertices = triangleMesh.vertices();
+  vector<int>& unconstrainedVertices = triangleMesh.unconstrainedVertices();
+  vector<VEC2>& vertices2 = blob2.vertices();
+  vector<int>& unconstrainedVertices2 = blob2.unconstrainedVertices();
+
   float xDiff = x - xMouse;
   float yDiff = y - yMouse;
   float speed = 0.001;
 
   if (mouseButton == GLUT_LEFT_BUTTON)
   {
-    eyeCenter[0] -= xDiff * speed;
-    eyeCenter[1] += yDiff * speed;
+    // TO DO: right now x and y are in viewspace coordiantes. must convert!!!
+
+    // printf("x is: %f\n", (double)x);
+    // printf("y is: %f\n", (double)y);
+    // printf("xMouse is: %f\n", (double)xMouse);
+    // printf("yMouse is: %f\n", (double)yMouse);
+    // eyeCenter[0] -= xDiff * speed;
+    // eyeCenter[1] += yDiff * speed;
+    for (int i = 0; i < unconstrainedVertices.size(); i++)
+    {
+      if (xMouse == vertices[unconstrainedVertices[i]][0] && yMouse == vertices[unconstrainedVertices[i]][1])
+      {
+        printf("x on vertex\n");
+        vertices[unconstrainedVertices[i]][0] = x;
+        vertices[unconstrainedVertices[i]][1] = y;
+      }
+
+      if (xMouse == vertices2[unconstrainedVertices2[i]][0] && yMouse == vertices2[unconstrainedVertices2[i]][1])
+      {
+        printf("x on vertex2\n");
+        vertices2[unconstrainedVertices2[i]][0] = x;
+        vertices2[unconstrainedVertices2[i]][1] = y;
+      }
+    }
   }
-  if (mouseButton == GLUT_RIGHT_BUTTON)
-    zoom -= yDiff * speed;
+  // if (mouseButton == GLUT_RIGHT_BUTTON)
+  //   zoom -= yDiff * speed;
 
   xMouse = x;
   yMouse = y;
@@ -274,13 +334,23 @@ void glutIdle()
         break;
       case HANG:
       case SINGLE:
-        triangleMesh.addBodyForce(bodyForce);
-        blob2.addBodyForce(bodyForce);
         break;
     }
 
-    triangleMesh.stepQuasistatic();
-    blob2.stepQuasistatic();
+    if (frame == 0) // if we are on the first frame, insert a force so they jump
+    {
+      triangleMesh.addBodyForce(VEC2(0.0, 200.0));
+      blob2.addBodyForce(VEC2(0.0, 200.0));
+    }
+    // triangleMesh.stepQuasistatic();
+    // blob2.stepQuasistatic();
+    for( int i = 0; i < 15; i ++)
+    {
+      triangleMesh.addBodyForce(bodyForce);
+      triangleMesh.stepMotion(dt, bodyForce);
+      blob2.addBodyForce(bodyForce);
+      blob2.stepMotion(dt, bodyForce);
+    }
     frame++;
 
     if (singleStep)
@@ -373,8 +443,16 @@ void readCommandLine(int argc, char** argv)
   // build the scene
   triangleMesh.buildBlob(1.15);
   blob2.buildBlob(0.25);
-  bodyForce[0] = 0.01;
-  bodyForce[1] = 0;
+  bodyForce[0] = 0;
+  bodyForce[1] = -0.3;
+
+  triangleMesh.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
+  triangleMesh.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
+  triangleMesh.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
+  blob2.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
+  blob2.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
+  blob2.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
+
 }
 
 ///////////////////////////////////////////////////////////////////////
