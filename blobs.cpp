@@ -58,8 +58,9 @@ TRIANGLE_MESH triangleMesh(poissonsRatio, youngsModulus);
 TRIANGLE_MESH blob2(poissonsRatio, youngsModulus);
 VEC2 bodyForce;
 
-enum SCENE { STRETCH, SQUASH, LSHEAR, RSHEAR, HANG, SINGLE};
+enum SCENE { STRETCH, SQUASH, LSHEAR, RSHEAR, SINGLE, MOTION};
 SCENE scene = SINGLE;
+int sceneNum = 1;
 
 int meshFlag = 0;
 
@@ -255,7 +256,7 @@ void glutMouseMotion(int x, int y)
     return;
   }
 
-  // printf("in mouse motion\n");
+  printf("in mouse motion\n");
 
   vector<VEC2>& vertices = triangleMesh.vertices();
   vector<int>& unconstrainedVertices = triangleMesh.unconstrainedVertices();
@@ -264,7 +265,7 @@ void glutMouseMotion(int x, int y)
 
   float xDiff = x - xMouse;
   float yDiff = y - yMouse;
-  float speed = 0.001;
+  float speed = 0.01;
 
   if (mouseButton == GLUT_LEFT_BUTTON)
   {
@@ -272,24 +273,35 @@ void glutMouseMotion(int x, int y)
 
     // printf("x is: %f\n", (double)x);
     // printf("y is: %f\n", (double)y);
-    // printf("xMouse is: %f\n", (double)xMouse);
-    // printf("yMouse is: %f\n", (double)yMouse);
     // eyeCenter[0] -= xDiff * speed;
     // eyeCenter[1] += yDiff * speed;
+    double screenX = ((double) x / 400.0) - 0.09;
+    double screenY = ((double) (800 - y) / 400.0) - 0.35;
+    double mouseX = ((double) xMouse / 400.0) - 0.09;
+    double mouseY = ((double) (800 - yMouse) / 400.0) - 0.35;
+    // printf("xMouse is: %f\n", screenX);
+    // printf("yMouse is: %f\n", screenY);
+
     for (int i = 0; i < unconstrainedVertices.size(); i++)
     {
-      if (xMouse == vertices[unconstrainedVertices[i]][0] && yMouse == vertices[unconstrainedVertices[i]][1])
+      // printf("unconstrained vertex at: (%f %f)\n", vertices[unconstrainedVertices[i]][0], vertices[unconstrainedVertices[i]][1]);
+      if (screenX <= vertices[unconstrainedVertices[i]][0] + 0.04
+        && screenX >= vertices[unconstrainedVertices[i]][0] - 0.04
+        && screenY <= vertices[unconstrainedVertices[i]][1] + 0.03
+        && screenY >= vertices[unconstrainedVertices[i]][1] - 0.03)
       {
-        printf("x on vertex\n");
-        vertices[unconstrainedVertices[i]][0] = x;
-        vertices[unconstrainedVertices[i]][1] = y;
+        // printf("x on vertex\n");
+        vertices[unconstrainedVertices[i]][0] = screenX + 0.1;
+        vertices[unconstrainedVertices[i]][1] = screenY + 0.1;
       }
 
-      if (xMouse == vertices2[unconstrainedVertices2[i]][0] && yMouse == vertices2[unconstrainedVertices2[i]][1])
+      if (screenX <= vertices2[unconstrainedVertices2[i]][0] + 0.04
+        && screenX >= vertices2[unconstrainedVertices2[i]][0] - 0.04
+        && screenY <= vertices2[unconstrainedVertices2[i]][1] + 0.03
+        && screenY >= vertices2[unconstrainedVertices2[i]][1] - 0.03)
       {
-        printf("x on vertex2\n");
-        vertices2[unconstrainedVertices2[i]][0] = x;
-        vertices2[unconstrainedVertices2[i]][1] = y;
+        vertices2[unconstrainedVertices2[i]][0] = screenX - 0.1;
+        vertices2[unconstrainedVertices2[i]][1] = screenY - 0.1;
       }
     }
   }
@@ -332,24 +344,37 @@ void glutIdle()
         triangleMesh.stretch2(-0.01);
         blob2.stretch2(-0.01);
         break;
-      case HANG:
       case SINGLE:
+        triangleMesh.addBodyForce(bodyForce);
+        blob2.addBodyForce(bodyForce);
+        break;
+      case MOTION:
         break;
     }
 
-    if (frame == 0) // if we are on the first frame, insert a force so they jump
+    if (scene == MOTION)
     {
-      triangleMesh.addBodyForce(VEC2(0.0, 200.0));
-      blob2.addBodyForce(VEC2(0.0, 200.0));
+      if (frame == 0 && sceneNum == 0) // if we are on the first frame, insert a force so they jump
+      {
+        triangleMesh.addBodyForce(VEC2(10.0, 200.0));
+        blob2.addBodyForce(VEC2(-10.0, 200.0));
+      }
+      for( int i = 0; i < 15; i ++)
+      {
+        if (sceneNum == 0)
+        {
+          blob2.addBodyForce(bodyForce);
+          triangleMesh.addBodyForce(bodyForce);
+        }
+        triangleMesh.stepMotion(dt, bodyForce);
+        blob2.stepMotion(dt, bodyForce);
+      }
     }
-    // triangleMesh.stepQuasistatic();
-    // blob2.stepQuasistatic();
-    for( int i = 0; i < 15; i ++)
+    else
     {
-      triangleMesh.addBodyForce(bodyForce);
-      triangleMesh.stepMotion(dt, bodyForce);
-      blob2.addBodyForce(bodyForce);
-      blob2.stepMotion(dt, bodyForce);
+      printf("else\n");
+      triangleMesh.stepQuasistatic();
+      blob2.stepQuasistatic();
     }
     frame++;
 
@@ -421,9 +446,7 @@ void readCommandLine(int argc, char** argv)
     string sceneType(argv[1]);
     sceneType = toUpper(sceneType);
 
-    if (sceneType.compare("HANG") == 0)
-      scene = HANG;
-    else if (sceneType.compare("LSHEAR") == 0)
+    if (sceneType.compare("LSHEAR") == 0)
       scene = LSHEAR;
     else if (sceneType.compare("RSHEAR") == 0 || sceneType.compare("SHEAR") == 0 )
       scene = RSHEAR;
@@ -431,18 +454,34 @@ void readCommandLine(int argc, char** argv)
       scene = SQUASH;
     else if (sceneType.compare("STRETCH") == 0)
       scene = STRETCH;
+    else if (sceneType.compare("SINGLE") == 0)
+      scene = SINGLE;
     else
     {
-      scene = SINGLE;
+      scene = MOTION;
+      sceneNum = 0;
     }
 
-    if (argc > 2) //&& argv[2] == "-m")
-      meshFlag = 1;
+    if (argc > 2)
+    {
+      for(int x = 2; x < argc; x++)
+      {
+        if (argv[x][1] == 'm')
+          meshFlag = 1;
+        else if (argv[x][1] == 'b')
+          sceneNum = 1;
+      }
+    }
+  }
+  else
+  {
+    scene = MOTION;
+    sceneNum = 0;
   }
 
   // build the scene
-  triangleMesh.buildBlob(1.15);
-  blob2.buildBlob(0.25);
+  triangleMesh.buildBlob(1.15, sceneNum);
+  blob2.buildBlob(0.25, sceneNum);
   bodyForce[0] = 0;
   bodyForce[1] = -0.3;
 
@@ -461,16 +500,9 @@ int main(int argc, char** argv)
 {
   cout << " Usage: " << argv[0] << " <which scene> " << endl;
   cout << "\t Valid values: " << endl;
-  cout << "\t\t <which test>: SINGLE, HANG, LSHEAR, RSHEAR, SQUASH, STRETCH" << endl;
+  cout << "\t\t <which test>: SINGLE, LSHEAR, RSHEAR, SQUASH, STRETCH, MOTION" << endl;
 
   readCommandLine(argc, argv);
-
-  //part 2 and 3 on homework point breakdown: use finite difference on startup
-  //see STVK.cpp for code
-  printf("-----------Finite Difference test on Startup------------\n");
-  HessianDifference();
-  PK1Difference();
-  printf("---------------End Finite Difference test---------------\n");
 
   // initialize GLUT and GL
   glutInit(&argc, argv);

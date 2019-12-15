@@ -18,7 +18,7 @@ public:
   // add walls
   void addWall(const WALL& wall)             { _walls.push_back(wall); };
   // build the different kinds of tests
-  void buildBlob(const Real xPos);
+  void buildBlob(const Real xPos, int sceneNum);
 
   bool stepQuasistatic();
 
@@ -31,13 +31,18 @@ public:
 
   // set U
   void setBasisReduction();
-  // void setVelocity();
+
+  void basisNoTranslation();
 
   void uToq();
 
   void qTou();
 
+  // your average joe collision detection
   void checkCollision();
+
+  // a weird but fun collision detector
+  void wackyCollision();
 
 //----------------------------------------------------------
 
@@ -76,6 +81,8 @@ private:
 
   void computeStiffnessMatrix(MATRIX& K);
 
+  // void computeDampingMatrix(MATRIX& K, MATRIX& M);
+
   // how many degrees of freedom are there?
   int _DOFs;
 
@@ -93,6 +100,7 @@ private:
 
   // mass matrix
   MATRIX _mass;
+  // MATRIX _damp;
 
   // velocity and acceleration
   VECTOR _velocity;
