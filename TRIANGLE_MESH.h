@@ -18,7 +18,7 @@ public:
   // add walls
   void addWall(const WALL& wall)             { _walls.push_back(wall); };
   // build the different kinds of tests
-  void buildBlob(const Real xPos);
+  void buildBlob(const Real xPos, int sceneNum);
 
   bool stepQuasistatic();
 
@@ -31,7 +31,8 @@ public:
 
   // set U
   void setBasisReduction();
-  // void setVelocity();
+
+  void basisNoTranslation();
 
   void uToq();
 

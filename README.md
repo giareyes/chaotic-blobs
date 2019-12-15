@@ -2,37 +2,26 @@
 
 This project is an implementation of Barbic's 2005 paper Real-Time Subspace Integration for St.Venant-Kirchhoff Deformable Models, with the addition of motion.
 
-To see the results of just Barbic's paper:
+To see the results of just Barbic's paper, run:
 
-Step 1:go into TRIANGLE_MESH.cpp.
-Step 2: Comment out the checkCollisions call in stepMotion.
-Step 3: Also comment out
+ ./blob MOTION -b
 
-intermediate.col(0) = T.col(0);
-intermediate.col(1) = T.col(1);
-for(int i = 2; i < 11; i++)
-{
-  intermediate.col(i) = svddiag.col(i - 2) - (T.col(0).transpose()\*svddiag.col(i - 2))\*T.col(0);
-  intermediate.col(i) = intermediate.col(i) - (T.col(1).transpose()\*intermediate.col(i))\*T.col(1);
-}
+To see the results of Barbic's paper with the mesh drawn, run:
 
-\_U = intermediate;
+ ./blob MOTION -m -b
 
-in the function setBasisReduction, and uncomment
+ To run motion results, you can run either:
 
-\_U = svddiag;
+ ./blob
 
+ or
 
-Step 4: go into blobs.cpp
-Step 5: in GlutIdle, comment out
+ ./blob MOTION -m
 
-if (frame == 0) // if we are on the first frame, insert a force so they jump
-{
-  triangleMesh.addBodyForce(VEC2(10.0, 200.0));
-  blob2.addBodyForce(VEC2(-10.0, 200.0));
-}
+ to see the mesh drawn in.
 
-and
+ To run quasistatics on the blobs, run:
 
-TriangleMesh.addBodyForce(bodyForce);
-blob2.addBodyForce(bodyForce);
+ ./blob [SINGLE, LSHEAR, RSHEAR, SQUASH, STRETCH] [-m]
+
+ choose one test from the first list, and optionally show the mesh. 

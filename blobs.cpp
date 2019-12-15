@@ -58,8 +58,9 @@ TRIANGLE_MESH triangleMesh(poissonsRatio, youngsModulus);
 TRIANGLE_MESH blob2(poissonsRatio, youngsModulus);
 VEC2 bodyForce;
 
-enum SCENE { STRETCH, SQUASH, LSHEAR, RSHEAR, HANG, SINGLE};
+enum SCENE { STRETCH, SQUASH, LSHEAR, RSHEAR, SINGLE, MOTION};
 SCENE scene = SINGLE;
+int sceneNum = 1;
 
 int meshFlag = 0;
 
@@ -343,24 +344,37 @@ void glutIdle()
         triangleMesh.stretch2(-0.01);
         blob2.stretch2(-0.01);
         break;
-      case HANG:
       case SINGLE:
+        triangleMesh.addBodyForce(bodyForce);
+        blob2.addBodyForce(bodyForce);
+        break;
+      case MOTION:
         break;
     }
 
-    if (frame == 0) // if we are on the first frame, insert a force so they jump
+    if (scene == MOTION)
     {
-      triangleMesh.addBodyForce(VEC2(10.0, 200.0));
-      blob2.addBodyForce(VEC2(-10.0, 200.0));
+      if (frame == 0 && sceneNum == 0) // if we are on the first frame, insert a force so they jump
+      {
+        triangleMesh.addBodyForce(VEC2(10.0, 200.0));
+        blob2.addBodyForce(VEC2(-10.0, 200.0));
+      }
+      for( int i = 0; i < 15; i ++)
+      {
+        if (sceneNum == 0)
+        {
+          blob2.addBodyForce(bodyForce);
+          triangleMesh.addBodyForce(bodyForce);
+        }
+        triangleMesh.stepMotion(dt, bodyForce);
+        blob2.stepMotion(dt, bodyForce);
+      }
     }
-    // triangleMesh.stepQuasistatic();
-    // blob2.stepQuasistatic();
-    for( int i = 0; i < 15; i ++)
+    else
     {
-      triangleMesh.addBodyForce(bodyForce);
-      triangleMesh.stepMotion(dt, bodyForce);
-      blob2.addBodyForce(bodyForce);
-      blob2.stepMotion(dt, bodyForce);
+      printf("else\n");
+      triangleMesh.stepQuasistatic();
+      blob2.stepQuasistatic();
     }
     frame++;
 
@@ -432,9 +446,7 @@ void readCommandLine(int argc, char** argv)
     string sceneType(argv[1]);
     sceneType = toUpper(sceneType);
 
-    if (sceneType.compare("HANG") == 0)
-      scene = HANG;
-    else if (sceneType.compare("LSHEAR") == 0)
+    if (sceneType.compare("LSHEAR") == 0)
       scene = LSHEAR;
     else if (sceneType.compare("RSHEAR") == 0 || sceneType.compare("SHEAR") == 0 )
       scene = RSHEAR;
@@ -442,18 +454,34 @@ void readCommandLine(int argc, char** argv)
       scene = SQUASH;
     else if (sceneType.compare("STRETCH") == 0)
       scene = STRETCH;
+    else if (sceneType.compare("SINGLE") == 0)
+      scene = SINGLE;
     else
     {
-      scene = SINGLE;
+      scene = MOTION;
+      sceneNum = 0;
     }
 
-    if (argc > 2) //&& argv[2] == "-m")
-      meshFlag = 1;
+    if (argc > 2)
+    {
+      for(int x = 2; x < argc; x++)
+      {
+        if (argv[x][1] == 'm')
+          meshFlag = 1;
+        else if (argv[x][1] == 'b')
+          sceneNum = 1;
+      }
+    }
+  }
+  else
+  {
+    scene = MOTION;
+    sceneNum = 0;
   }
 
   // build the scene
-  triangleMesh.buildBlob(1.15);
-  blob2.buildBlob(0.25);
+  triangleMesh.buildBlob(1.15, sceneNum);
+  blob2.buildBlob(0.25, sceneNum);
   bodyForce[0] = 0;
   bodyForce[1] = -0.3;
 
@@ -472,16 +500,9 @@ int main(int argc, char** argv)
 {
   cout << " Usage: " << argv[0] << " <which scene> " << endl;
   cout << "\t Valid values: " << endl;
-  cout << "\t\t <which test>: SINGLE, HANG, LSHEAR, RSHEAR, SQUASH, STRETCH" << endl;
+  cout << "\t\t <which test>: SINGLE, LSHEAR, RSHEAR, SQUASH, STRETCH, MOTION" << endl;
 
   readCommandLine(argc, argv);
-
-  //part 2 and 3 on homework point breakdown: use finite difference on startup
-  //see STVK.cpp for code
-  printf("-----------Finite Difference test on Startup------------\n");
-  HessianDifference();
-  PK1Difference();
-  printf("---------------End Finite Difference test---------------\n");
 
   // initialize GLUT and GL
   glutInit(&argc, argv);
