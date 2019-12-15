@@ -334,21 +334,23 @@ void glutIdle()
         break;
       case HANG:
       case SINGLE:
-        triangleMesh.addBodyForce(bodyForce);
-        blob2.addBodyForce(bodyForce);
         break;
     }
 
     if (frame == 0) // if we are on the first frame, insert a force so they jump
     {
-      printf("in first frame\n");
-      triangleMesh.addBodyForce(VEC2(0.0, 75.0));
-      blob2.addBodyForce(VEC2(0.0, 75.0));
+      triangleMesh.addBodyForce(VEC2(0.0, 200.0));
+      blob2.addBodyForce(VEC2(0.0, 200.0));
     }
     // triangleMesh.stepQuasistatic();
     // blob2.stepQuasistatic();
-    triangleMesh.stepMotion(dt, bodyForce);
-    blob2.stepMotion(dt, bodyForce);
+    for( int i = 0; i < 15; i ++)
+    {
+      triangleMesh.addBodyForce(bodyForce);
+      triangleMesh.stepMotion(dt, bodyForce);
+      blob2.addBodyForce(bodyForce);
+      blob2.stepMotion(dt, bodyForce);
+    }
     frame++;
 
     if (singleStep)
@@ -450,9 +452,6 @@ void readCommandLine(int argc, char** argv)
   blob2.addWall(WALL(VEC2(1,0), VEC2(-0.09,0)));
   blob2.addWall(WALL(VEC2(-1,0), VEC2(1.89,0)));
   blob2.addWall(WALL(VEC2(0,1), VEC2(0,-0.35)));
-
-  // triangleMesh.setVelocity(VEC2(0.0, 0.5 ));
-  // blob2.setVelocity(VEC2(0.0, 0.5 ));
 
 }
 

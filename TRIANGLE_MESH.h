@@ -37,10 +37,6 @@ public:
 
   void qTou();
 
-  void setVelocity(const VEC2& v);
-
-  void setAcceleration(const VEC2& a);
-
   void checkCollision();
 
 //----------------------------------------------------------
