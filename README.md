@@ -1,6 +1,6 @@
 # chaotic-blobs
 
-This project is an implementation of Barbic's 2005 paper Real-Time Subspace Integration for St.Venant-Kirchho Deformable Models, with the addition of motion.
+This project is an implementation of Barbic's 2005 paper Real-Time Subspace Integration for St.Venant-Kirchhoff Deformable Models, with the addition of motion.
 
 To see the results of just Barbic's paper:
 
