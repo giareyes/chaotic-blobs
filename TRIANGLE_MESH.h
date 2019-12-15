@@ -81,6 +81,8 @@ private:
 
   void computeStiffnessMatrix(MATRIX& K);
 
+  // void computeDampingMatrix(MATRIX& K, MATRIX& M);
+
   // how many degrees of freedom are there?
   int _DOFs;
 
@@ -98,6 +100,7 @@ private:
 
   // mass matrix
   MATRIX _mass;
+  // MATRIX _damp;
 
   // velocity and acceleration
   VECTOR _velocity;

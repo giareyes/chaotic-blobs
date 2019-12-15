@@ -260,6 +260,14 @@ void TRIANGLE_MESH::setMassMatrix()
   _mass = M;
 }
 
+// void TRIANGLE_MESH::computeDampingMatrix(MATRIX& K, MATRIX& M)
+// {
+//   float alpha = 0.01; // constant for damping
+//   float beta = 0.02;  // constant for damping
+//
+//   _damp = alpha*M - beta*K;
+// }
+
 void TRIANGLE_MESH::basisNoTranslation()
 {
   MATRIX U(46,9);
@@ -605,30 +613,17 @@ void TRIANGLE_MESH::checkCollision()
         diffx = _walls[y].point()[0] - (_vertices[x][0]);
 
       float diffy =  _walls[y].point()[1] - (_vertices[x][1]);
-      int velocity_index;
-      std::vector<int>::iterator it = std::find(_constrainedVertices.begin(), _constrainedVertices.end(), x);
-      if(it != _constrainedVertices.end())
-      {
-        velocity_index = std::distance(_constrainedVertices.begin(), it);
-        velocity_index =  _unconstrainedVertices.size()*2 + velocity_index*2;
-      }
-      else
-      {
-        it = std::find(_unconstrainedVertices.begin(), _unconstrainedVertices.end(), x);
-        velocity_index = std::distance(_unconstrainedVertices.begin(), it);
-        velocity_index = velocity_index*2;
-      }
 
       if((diffx >= 0 && _walls[y].point()[0] < 0) || (diffx <= 0 && _walls[y].point()[0] > 0) ) //did it hit a side wall?
       {
         addBodyForce( kw * abs(diffx) * _walls[y].normal() ); //apply spring force of wall
-        addBodyForce( l * _velocity[velocity_index] * _walls[y].normal() ); //apply dampening force
+        addBodyForce( l * _velocity[2*x] * _walls[y].normal() ); //apply dampening force
         break;
       }
       if(diffy >= 0 && _walls[y].point()[1] != 0) // did it hit the floor?
       {
           addBodyForce( kw * diffy * _walls[y].normal() ); //apply spring force of wall
-          addBodyForce( l * _velocity[velocity_index + 1] * _walls[y].normal() ); //apply dampening force
+          addBodyForce( l * _velocity[2*x + 1] * _walls[y].normal() ); //apply dampening force
           break;
       }
     }
