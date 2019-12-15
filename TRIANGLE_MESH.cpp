@@ -538,6 +538,56 @@ void TRIANGLE_MESH::computeMaterialForces()
   //store global vector into _f
   _f = global_vector;
 }
+
+void TRIANGLE_MESH::wackyCollision()
+{
+  float kw = 100; // spring constant of wall
+  float l = 0.1; // dampening force constant
+
+  for(unsigned int y = 0; y < _walls.size(); y++)
+  {
+    for(int x = 0; x < _vertices.size(); x++ )
+    {
+      float diffx;
+      if(_walls[y].point()[0] > 0)
+        diffx = _walls[y].point()[0] - (_vertices[x][0]);
+      else
+        diffx = _walls[y].point()[0] - (_vertices[x][0]);
+
+      float diffy =  _walls[y].point()[1] - (_vertices[x][1]);
+      int velocity_index;
+      std::vector<int>::iterator it = std::find(_constrainedVertices.begin(), _constrainedVertices.end(), x);
+      if(it != _constrainedVertices.end())
+      {
+        velocity_index = std::distance(_constrainedVertices.begin(), it);
+        velocity_index =  _unconstrainedVertices.size()*2 + velocity_index*2;
+      }
+      else
+      {
+        it = std::find(_unconstrainedVertices.begin(), _unconstrainedVertices.end(), x);
+        velocity_index = std::distance(_unconstrainedVertices.begin(), it);
+        velocity_index = velocity_index*2;
+      }
+
+      if((diffx >= 0 && _walls[y].point()[0] < 0) || (diffx <= 0 && _walls[y].point()[0] > 0) ) //did it hit a side wall?
+      {
+        VEC2 force;
+        force = ( kw * abs(diffx) * _walls[y].normal() ); //apply spring force of wall
+        force += ( l * _velocity[velocity_index] * _walls[y].normal() ); //apply dampening force
+        _fExternal[velocity_index] += force[0];
+        _fExternal[velocity_index + 1] += force[1];
+      }
+      if(diffy >= 0 && _walls[y].point()[1] != 0) // did it hit the floor?
+      {
+        VEC2 force;
+        force = (kw * diffy * _walls[y].normal() ); //apply spring force of wall
+        force += ( l * _velocity[velocity_index + 1] * _walls[y].normal() ); //apply dampening force
+        _fExternal[velocity_index] += force[0];
+        _fExternal[velocity_index + 1] += force[1];
+      }
+    }
+  }
+}
 // collision detection
 void TRIANGLE_MESH::checkCollision()
 {
@@ -556,13 +606,17 @@ void TRIANGLE_MESH::checkCollision()
 
       float diffy =  _walls[y].point()[1] - (_vertices[x][1]);
       int velocity_index;
-      if(std::find(_constrainedVertices.begin(), _constrainedVertices.end(), x) != _constrainedVertices.end())
+      std::vector<int>::iterator it = std::find(_constrainedVertices.begin(), _constrainedVertices.end(), x);
+      if(it != _constrainedVertices.end())
       {
-        velocity_index = _unconstrainedVertices.size()*2 + x*2;
+        velocity_index = std::distance(_constrainedVertices.begin(), it);
+        velocity_index =  _unconstrainedVertices.size()*2 + velocity_index*2;
       }
       else
       {
-        velocity_index = x*2;
+        it = std::find(_unconstrainedVertices.begin(), _unconstrainedVertices.end(), x);
+        velocity_index = std::distance(_unconstrainedVertices.begin(), it);
+        velocity_index = velocity_index*2;
       }
 
       if((diffx >= 0 && _walls[y].point()[0] < 0) || (diffx <= 0 && _walls[y].point()[0] > 0) ) //did it hit a side wall?

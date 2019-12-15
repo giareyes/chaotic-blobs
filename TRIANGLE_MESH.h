@@ -38,7 +38,11 @@ public:
 
   void qTou();
 
+  // your average joe collision detection
   void checkCollision();
+
+  // a weird but fun collision detector
+  void wackyCollision();
 
 //----------------------------------------------------------
 
