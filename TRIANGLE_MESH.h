@@ -38,6 +38,7 @@ public:
 
   void qTou();
 
+  void addSingleForce(const VEC2& bodyForce, int vertex);
   // your average joe collision detection
   void checkCollision();
 

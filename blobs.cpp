@@ -256,8 +256,6 @@ void glutMouseMotion(int x, int y)
     return;
   }
 
-  printf("in mouse motion\n");
-
   vector<VEC2>& vertices = triangleMesh.vertices();
   vector<int>& unconstrainedVertices = triangleMesh.unconstrainedVertices();
   vector<VEC2>& vertices2 = blob2.vertices();
@@ -265,48 +263,65 @@ void glutMouseMotion(int x, int y)
 
   float xDiff = x - xMouse;
   float yDiff = y - yMouse;
-  float speed = 0.01;
 
   if (mouseButton == GLUT_LEFT_BUTTON)
   {
-    // TO DO: right now x and y are in viewspace coordiantes. must convert!!!
-
-    // printf("x is: %f\n", (double)x);
-    // printf("y is: %f\n", (double)y);
-    // eyeCenter[0] -= xDiff * speed;
-    // eyeCenter[1] += yDiff * speed;
     double screenX = ((double) x / 400.0) - 0.09;
     double screenY = ((double) (800 - y) / 400.0) - 0.35;
     double mouseX = ((double) xMouse / 400.0) - 0.09;
     double mouseY = ((double) (800 - yMouse) / 400.0) - 0.35;
-    // printf("xMouse is: %f\n", screenX);
-    // printf("yMouse is: %f\n", screenY);
 
-    for (int i = 0; i < unconstrainedVertices.size(); i++)
+    if (sceneNum == 1)
     {
-      // printf("unconstrained vertex at: (%f %f)\n", vertices[unconstrainedVertices[i]][0], vertices[unconstrainedVertices[i]][1]);
-      if (screenX <= vertices[unconstrainedVertices[i]][0] + 0.04
-        && screenX >= vertices[unconstrainedVertices[i]][0] - 0.04
-        && screenY <= vertices[unconstrainedVertices[i]][1] + 0.03
-        && screenY >= vertices[unconstrainedVertices[i]][1] - 0.03)
+      for (int i = 0; i < unconstrainedVertices.size(); i++)
       {
-        // printf("x on vertex\n");
-        vertices[unconstrainedVertices[i]][0] = screenX + 0.1;
-        vertices[unconstrainedVertices[i]][1] = screenY + 0.1;
-      }
+        if (screenX <= vertices[unconstrainedVertices[i]][0] + 0.04
+          && screenX >= vertices[unconstrainedVertices[i]][0] - 0.04
+          && screenY <= vertices[unconstrainedVertices[i]][1] + 0.03
+          && screenY >= vertices[unconstrainedVertices[i]][1] - 0.03)
+        {
+          // vertices[unconstrainedVertices[i]][0] = screenX + 0.1;
+          // vertices[unconstrainedVertices[i]][1] = screenY + 0.1;
+          triangleMesh.addSingleForce(VEC2(xDiff, -1*yDiff), unconstrainedVertices[i]);
+        }
 
-      if (screenX <= vertices2[unconstrainedVertices2[i]][0] + 0.04
-        && screenX >= vertices2[unconstrainedVertices2[i]][0] - 0.04
-        && screenY <= vertices2[unconstrainedVertices2[i]][1] + 0.03
-        && screenY >= vertices2[unconstrainedVertices2[i]][1] - 0.03)
+        if (screenX <= vertices2[unconstrainedVertices2[i]][0] + 0.04
+          && screenX >= vertices2[unconstrainedVertices2[i]][0] - 0.04
+          && screenY <= vertices2[unconstrainedVertices2[i]][1] + 0.03
+          && screenY >= vertices2[unconstrainedVertices2[i]][1] - 0.03)
+        {
+          blob2.addSingleForce(VEC2(xDiff, -1*yDiff), unconstrainedVertices2[i]);
+          // vertices2[unconstrainedVertices2[i]][0] = screenX - 0.1;
+          // vertices2[unconstrainedVertices2[i]][1] = screenY - 0.1;
+        }
+      }
+    }
+    else
+    {
+      for (int i = 0; i < vertices.size(); i++)
       {
-        vertices2[unconstrainedVertices2[i]][0] = screenX - 0.1;
-        vertices2[unconstrainedVertices2[i]][1] = screenY - 0.1;
+        // printf("unconstrained vertex at: (%f %f)\n", vertices[unconstrainedVertices[i]][0], vertices[unconstrainedVertices[i]][1]);
+        if (screenX <= vertices[i][0] + 0.04
+          && screenX >= vertices[i][0] - 0.04
+          && screenY <= vertices[i][1] + 0.03
+          && screenY >= vertices[i][1] - 0.03)
+        {
+          // printf("x on vertex\n");
+          triangleMesh.addBodyForce(VEC2(xDiff*2, -1*yDiff*2));
+          triangleMesh.addSingleForce(VEC2(xDiff, -1*yDiff), i);
+        }
+
+        if (screenX <= vertices2[i][0] + 0.04
+          && screenX >= vertices2[i][0] - 0.04
+          && screenY <= vertices2[i][1] + 0.03
+          && screenY >= vertices2[i][1] - 0.03)
+        {
+          blob2.addBodyForce(VEC2(xDiff*2, -1*yDiff*2));
+          blob2.addSingleForce(VEC2(xDiff, -1*yDiff), i);
+        }
       }
     }
   }
-  // if (mouseButton == GLUT_RIGHT_BUTTON)
-  //   zoom -= yDiff * speed;
 
   xMouse = x;
   yMouse = y;

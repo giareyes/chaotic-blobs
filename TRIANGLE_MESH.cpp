@@ -465,6 +465,25 @@ void TRIANGLE_MESH::addBodyForce(const VEC2& bodyForce)
     _fExternal[2 * x + 1] += bodyForce[1];
   }
 }
+
+void TRIANGLE_MESH::addSingleForce(const VEC2& bodyForce, int vertex)
+{
+  std::vector<int>::iterator it = std::find(_constrainedVertices.begin(), _constrainedVertices.end(), vertex);
+  int velocity_index;
+  if(it != _constrainedVertices.end())
+  {
+    velocity_index = std::distance(_constrainedVertices.begin(), it);
+    _fExternal[_unconstrainedVertices.size()*2 + velocity_index*2]     += bodyForce[0];
+    _fExternal[_unconstrainedVertices.size()*2 + velocity_index*2 + 1] += bodyForce[1];
+  }
+  else
+  {
+    it = std::find(_unconstrainedVertices.begin(), _unconstrainedVertices.end(), vertex);
+    velocity_index = std::distance(_unconstrainedVertices.begin(), it);
+    _fExternal[velocity_index*2]     += bodyForce[0];
+    _fExternal[velocity_index*2 + 1] += bodyForce[1];
+  }
+}
 ///////////////////////////////////////////////////////////////////////
 // advance the constrained nodes for the shear test
 ///////////////////////////////////////////////////////////////////////
@@ -618,12 +637,14 @@ void TRIANGLE_MESH::checkCollision()
       {
         addBodyForce( kw * abs(diffx) * _walls[y].normal() ); //apply spring force of wall
         addBodyForce( l * _velocity[2*x] * _walls[y].normal() ); //apply dampening force
+        addSingleForce(abs(diffx) * _walls[y].normal(), x);
         break;
       }
       if(diffy >= 0 && _walls[y].point()[1] != 0) // did it hit the floor?
       {
           addBodyForce( kw * diffy * _walls[y].normal() ); //apply spring force of wall
           addBodyForce( l * _velocity[2*x + 1] * _walls[y].normal() ); //apply dampening force
+          addSingleForce(abs(diffy) * _walls[y].normal(), x);
           break;
       }
     }
@@ -705,13 +726,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 
   // step 8: update all node positions w new displacement vector
   int unconstrained = _unconstrainedVertices.size();
-  for(int x = 0; x < unconstrained; x++)
-  {
-    VEC2 displacement;
-    displacement[0] = _u[2*x];
-    displacement[1] = _u[2*x + 1];
-    _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
-  }
+  uScatter();
 
   for(int x = 0; x < _constrainedVertices.size(); x++)
   {
@@ -771,14 +786,7 @@ bool TRIANGLE_MESH::stepQuasistatic()
   qTou();
 
   //step 7: update all node positions w new displacement vector
-  int unconstrained = _unconstrainedVertices.size();
-  for(int x = 0; x < unconstrained; x++)
-  {
-    VEC2 displacement;
-    displacement[0] = _u[2*x];
-    displacement[1] = _u[2*x + 1];
-    _vertices[_unconstrainedVertices[x]] = _restVertices[_unconstrainedVertices[x]] + displacement;
-  }
+  uScatter();
 
   //reset forces to 0
   _fExternal.setZero();
