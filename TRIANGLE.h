@@ -34,6 +34,8 @@ public:
 
   VECTOR computeForceVector();
 
+  VECTOR precomputedLinearCoef();
+
   // compute rest area of this triangle
   Real restArea() const;
   Real area() const;
@@ -45,6 +47,10 @@ private:
 
   VEC2* _vertices[3];
   VEC2 _restPose[3];
+
+  MATRIX2 _Dm;
+  MATRIX2 _DmInverse;
+  MATRIX6 _linearCoef;
 
   // material model
   MATERIAL* _material;

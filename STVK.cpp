@@ -7,6 +7,14 @@ STVK::STVK(const Real lambda, const Real mu) :
   _name = std::string("StVK");
 }
 
+Real STVK::getLambda() {
+  return _lambda;
+}
+
+Real STVK::getMu(){
+  return _mu;
+}
+
 ///////////////////////////////////////////////////////////////////////
 // P = first Piola-Kirchoff stress tensor
 // P = F * S
@@ -14,10 +22,10 @@ STVK::STVK(const Real lambda, const Real mu) :
 MATRIX STVK::PK1(const MATRIX2& F)
 {
   MATRIX2 transpose = F.transpose();
-  MATRIX2 identity;
+  //MATRIX2 identity;
   MATRIX2 mult = transpose*F;
-  identity.setIdentity();
-  mult = mult - identity;
+  //identity.setIdentity();
+  //mult = mult - identity;
 
   //first find the derivative of the first term
   MATRIX2 dFirst = 4*_mu*(F*mult);

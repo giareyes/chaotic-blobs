@@ -26,6 +26,10 @@ public:
   // get the strain energy
   Real psi(const MATRIX2& F);
 
+  Real getLambda();
+
+  Real getMu();
+
 protected:
   Real _lambda;
   Real _mu;

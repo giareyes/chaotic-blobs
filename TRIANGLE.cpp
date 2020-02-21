@@ -14,6 +14,71 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
   // store these as the rest pose, for now
   for (unsigned int x = 0; x < 3; x++)
     _restPose[x] = *_vertices[x];
+
+    VEC2 e0 = _restPose[1] - _restPose[0];
+    VEC2 e1 = _restPose[2] - _restPose[0];
+
+    // put e0, e1 into Dm
+    _Dm.col(0) = e0;
+    _Dm.col(1) = e1;
+
+    // calculate Dm inverse
+    _DmInverse = _Dm.inverse().eval();
+
+    Real lambda = _material->getLambda();
+    Real mu = _material->getMu();
+    //Real det = _Dm.determinant();
+    //MATRIX2 _DmInverse = det*_DmInverse;
+
+    // create the linear coefficient matrix below:
+    _linearCoef.setZero();
+
+    _linearCoef(0,0) = _DmInverse(0,0)*_DmInverse(0,0) + _DmInverse(1,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(0,1)
+                        + _DmInverse(1,1)*_DmInverse(1,1) + 2*_DmInverse(0,0)*_DmInverse(1,0) + 2*_DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(1,1) = _linearCoef(0,0);
+
+    _linearCoef(2,0) = -1*_DmInverse(0,0)*_DmInverse(0,0) - _DmInverse(0,1)*_DmInverse(0,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(3,1) = _linearCoef(2,0);
+
+    _linearCoef(4,0) = -1*_DmInverse(1,0)*_DmInverse(1,0) - _DmInverse(1,1)*_DmInverse(1,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(5,1) = _linearCoef(4,0);
+
+    _linearCoef(0,2) = -1*_DmInverse(0,0)*_DmInverse(0,0) - _DmInverse(0,1)*_DmInverse(0,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(1,3) = _linearCoef(0,2);
+
+    _linearCoef(2,2) = _DmInverse(0,0)*_DmInverse(0,0) + _DmInverse(0,1)*_DmInverse(0,1);
+    _linearCoef(3,3) = _linearCoef(2,2);
+
+    _linearCoef(4,2) = _DmInverse(0,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(5,3) = _linearCoef(4,2);
+
+    _linearCoef(0,4) = -1*_DmInverse(1,0)*_DmInverse(1,0) - _DmInverse(1,1)*_DmInverse(1,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(1,5) = _linearCoef(0,4);
+
+    _linearCoef(2,4) = _DmInverse(0,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(1,1);
+    _linearCoef(3,5) = _linearCoef(2,4);
+
+    _linearCoef(4,4) = _DmInverse(1,0)*_DmInverse(1,0) + _DmInverse(1,1)*_DmInverse(1,1);
+    _linearCoef(5,5) = _linearCoef(4,4);
+
+
+    // get restArea
+    // get triangle normal in R^3
+    VEC3 triangleNormal;
+    VEC3 restPose3[3];
+    for (int x = 0; x < 3; x++)
+    {
+      restPose3[x].setZero();
+      for (int y = 0; y < 2; y++)
+        restPose3[x][y] = _restPose[x][y];
+    }
+    triangleNormal = (restPose3[2] - restPose3[0]).cross(restPose3[1] - restPose3[0]);
+
+    Real restArea = triangleNormal.norm() * 0.5;
+
+    // multiply by (-4*mu - 4*lambda)*-1*restArea
+    _linearCoef = restArea*(4*mu + 4*lambda)*_linearCoef;
+
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -22,16 +87,7 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
 MATRIX2 TRIANGLE::computeF() const
 {
   MATRIX2 F; //force gradient; will be returned
-  MATRIX2 Dm; // material matrix
   MATRIX2 Ds; // spatial matrix
-
-  //pick _vertices[0] to be our source vertex.
-  VEC2 e0 = _restPose[1] - _restPose[0];
-  VEC2 e1 = _restPose[2] - _restPose[0];
-
-  // put e0, e1 into Dm
-  Dm.col(0) = e0;
-  Dm.col(1) = e1;
 
   //deformed e0 and e1
   VEC2 de0 = *_vertices[1] - *_vertices[0];
@@ -41,11 +97,8 @@ MATRIX2 TRIANGLE::computeF() const
   Ds.col(0) = de0;
   Ds.col(1) = de1;
 
-  //find the inverse of Dm
-  Dm = Dm.inverse().eval();
-
   //multiply Ds and Dm inverse to calcuate F
-  F = Ds*Dm;
+  F = Ds*_DmInverse;
 
   return F;
 }
@@ -60,6 +113,25 @@ VEC2 TRIANGLE::vertexAverage()
     final += (*_vertices[x]);
 
   return final * 1.0 / 3.0;
+}
+
+///////////////////////////////////////////////////////////////////////
+// use a precomputed Linear Coefficient
+///////////////////////////////////////////////////////////////////////
+VECTOR TRIANGLE::precomputedLinearCoef()
+{
+  // figure out how to get lamda and mu
+  VECTOR linearForce(6);
+  VECTOR pos(6);
+  for(int i = 0; i < 3; i++)
+  {
+    pos[2*i] = (*_vertices[i])[0];
+    pos[2*i + 1] = (*_vertices[i])[1];
+  }
+
+  // linearForce = _linearCoef*getDisplacements();
+  linearForce = _linearCoef*pos;
+  return linearForce;
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -78,7 +150,7 @@ VECTOR TRIANGLE::computeForceVector()
   //get vectorized df/du
   dfdu = pFpuVectorized();
 
-  forceVector = dfdu.transpose()*vectorize(pk1);
+  forceVector = dfdu.transpose()*vectorize(pk1) + precomputedLinearCoef();
 
   return forceVector;
 }
@@ -110,25 +182,13 @@ MATRIX TRIANGLE::computeForceJacobian()
 vector<MATRIX> TRIANGLE::pFpu()
 {
   vector<MATRIX> result; //the end 3rd order tensor
-  MATRIX2 Dm; //the material matrix
-
-  // e0 and e1
-  VEC2 e0 = _restPose[1] - _restPose[0];
-  VEC2 e1 = _restPose[2] - _restPose[0];
-
-  //put de0 and de1 into our matrerial matrix
-  Dm.col(0) = e0;
-  Dm.col(1) = e1;
-
-  //find the inverse of Dm
-  Dm = Dm.inverse().eval();
 
   //compute dF/x0 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x0;
   x0.setZero();
   x0(0,0) = -1;
   x0(0,1) = -1;
-  x0 = x0*Dm;
+  x0 = x0*_DmInverse;
   result.push_back(x0);
 
   //compute dF/x1 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
@@ -136,35 +196,35 @@ vector<MATRIX> TRIANGLE::pFpu()
   x1.setZero();
   x1(1,0) = -1;
   x1(1,1) = -1;
-  x1 = x1*Dm;
+  x1 = x1*_DmInverse;
   result.push_back(x1);
 
   //compute dF/x2 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x2;
   x2.setZero();
   x2(0,0) = 1;
-  x2 = x2*Dm;
+  x2 = x2*_DmInverse;
   result.push_back(x2);
 
   //compute dF/x3 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x3;
   x3.setZero();
   x3(1,0) = 1;
-  x3 = x3*Dm;
+  x3 = x3*_DmInverse;
   result.push_back(x3);
 
   //compute dF/x4 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x4;
   x4.setZero();
   x4(0,1) = 1;
-  x4 = x4*Dm;
+  x4 = x4*_DmInverse;
   result.push_back(x4);
 
   //compute dF/x5 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x5;
   x5.setZero();
   x5(1,1) = 1;
-  x5 = x5*Dm;
+  x5 = x5*_DmInverse;
   result.push_back(x5);
 
   return result;
