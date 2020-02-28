@@ -22,62 +22,17 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     _Dm.col(0) = e0;
     _Dm.col(1) = e1;
 
-    // calculate Dm inverse
-    _DmInverse = _Dm.inverse().eval();
-
     Real lambda = _material->getLambda();
     Real mu = _material->getMu();
-    //Real det = _Dm.determinant();
-    //MATRIX2 _DmInverse = det*_DmInverse;
 
     // create the linear coefficient matrix below:
-    _linearCoef.setZero();
-
-    _linearCoef(0,0) = _DmInverse(0,0)*_DmInverse(0,0) + _DmInverse(1,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(0,1)
-                        + _DmInverse(1,1)*_DmInverse(1,1) + 2*_DmInverse(0,0)*_DmInverse(1,0) + 2*_DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(1,1) = _linearCoef(0,0);
-
-    _linearCoef(2,0) = -1*_DmInverse(0,0)*_DmInverse(0,0) - _DmInverse(0,1)*_DmInverse(0,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(3,1) = _linearCoef(2,0);
-
-    _linearCoef(4,0) = -1*_DmInverse(1,0)*_DmInverse(1,0) - _DmInverse(1,1)*_DmInverse(1,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(5,1) = _linearCoef(4,0);
-
-    _linearCoef(0,2) = -1*_DmInverse(0,0)*_DmInverse(0,0) - _DmInverse(0,1)*_DmInverse(0,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(1,3) = _linearCoef(0,2);
-
-    _linearCoef(2,2) = _DmInverse(0,0)*_DmInverse(0,0) + _DmInverse(0,1)*_DmInverse(0,1);
-    _linearCoef(3,3) = _linearCoef(2,2);
-
-    _linearCoef(4,2) = _DmInverse(0,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(5,3) = _linearCoef(4,2);
-
-    _linearCoef(0,4) = -1*_DmInverse(1,0)*_DmInverse(1,0) - _DmInverse(1,1)*_DmInverse(1,1) - _DmInverse(0,0)*_DmInverse(1,0) - _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(1,5) = _linearCoef(0,4);
-
-    _linearCoef(2,4) = _DmInverse(0,0)*_DmInverse(1,0) + _DmInverse(0,1)*_DmInverse(1,1);
-    _linearCoef(3,5) = _linearCoef(2,4);
-
-    _linearCoef(4,4) = _DmInverse(1,0)*_DmInverse(1,0) + _DmInverse(1,1)*_DmInverse(1,1);
-    _linearCoef(5,5) = _linearCoef(4,4);
-
-
-    // get restArea
-    // get triangle normal in R^3
-    VEC3 triangleNormal;
-    VEC3 restPose3[3];
-    for (int x = 0; x < 3; x++)
-    {
-      restPose3[x].setZero();
-      for (int y = 0; y < 2; y++)
-        restPose3[x][y] = _restPose[x][y];
-    }
-    triangleNormal = (restPose3[2] - restPose3[0]).cross(restPose3[1] - restPose3[0]);
-
-    Real restArea = triangleNormal.norm() * 0.5;
+    // as it turns out, the linear coefficient matrix is equal to the constant matrix, and
+    // both are equal to (pfpu)T * (pfpu)
+    _pfpu = pFpuVectorized();
+    _linearCoef = _pfpu.transpose() * _pfpu;
 
     // multiply by (-4*mu - 4*lambda)*-1*restArea
-    _linearCoef = restArea*(4*mu + 4*lambda)*_linearCoef;
+    _linearCoef = restArea()*(4*mu + 4*lambda)*_linearCoef;
 
 }
 
@@ -88,6 +43,7 @@ MATRIX2 TRIANGLE::computeF() const
 {
   MATRIX2 F; //force gradient; will be returned
   MATRIX2 Ds; // spatial matrix
+  MATRIX2 DmInverse;
 
   //deformed e0 and e1
   VEC2 de0 = *_vertices[1] - *_vertices[0];
@@ -98,7 +54,8 @@ MATRIX2 TRIANGLE::computeF() const
   Ds.col(1) = de1;
 
   //multiply Ds and Dm inverse to calcuate F
-  F = Ds*_DmInverse;
+  DmInverse = _Dm.inverse().eval();
+  F = Ds*DmInverse;
 
   return F;
 }
@@ -129,7 +86,6 @@ VECTOR TRIANGLE::precomputedLinearCoef()
     pos[2*i + 1] = (*_vertices[i])[1];
   }
 
-  // linearForce = _linearCoef*getDisplacements();
   linearForce = _linearCoef*pos;
   return linearForce;
 }
@@ -147,10 +103,7 @@ VECTOR TRIANGLE::computeForceVector()
   //multiply pk1 by -1 and area as discussed in OH
   pk1 = -1*restArea()*pk1;
 
-  //get vectorized df/du
-  dfdu = pFpuVectorized();
-
-  forceVector = dfdu.transpose()*vectorize(pk1) + precomputedLinearCoef();
+  forceVector = _pfpu.transpose()*vectorize(pk1) + precomputedLinearCoef();
 
   return forceVector;
 }
@@ -168,11 +121,8 @@ MATRIX TRIANGLE::computeForceJacobian()
   //multiply dpdf by -1 and area as discussed in OH
   dpdf = -1*restArea()*dpdf;
 
-  //get vectorized df/du. This is matrix A from class
-  dfdu = pFpuVectorized();
-
   // d^2 psi/ dx^2 = A transpose * B * A
-  jacobian = dfdu.transpose() * dpdf * dfdu;
+  jacobian = (_pfpu.transpose() * dpdf * _pfpu) + _linearCoef;
 
   return jacobian;
 }
@@ -182,13 +132,15 @@ MATRIX TRIANGLE::computeForceJacobian()
 vector<MATRIX> TRIANGLE::pFpu()
 {
   vector<MATRIX> result; //the end 3rd order tensor
+  MATRIX2 DmInverse;
+  DmInverse = _Dm.inverse().eval();
 
   //compute dF/x0 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x0;
   x0.setZero();
   x0(0,0) = -1;
   x0(0,1) = -1;
-  x0 = x0*_DmInverse;
+  x0 = x0*DmInverse;
   result.push_back(x0);
 
   //compute dF/x1 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
@@ -196,35 +148,35 @@ vector<MATRIX> TRIANGLE::pFpu()
   x1.setZero();
   x1(1,0) = -1;
   x1(1,1) = -1;
-  x1 = x1*_DmInverse;
+  x1 = x1*DmInverse;
   result.push_back(x1);
 
   //compute dF/x2 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x2;
   x2.setZero();
   x2(0,0) = 1;
-  x2 = x2*_DmInverse;
+  x2 = x2*DmInverse;
   result.push_back(x2);
 
   //compute dF/x3 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x3;
   x3.setZero();
   x3(1,0) = 1;
-  x3 = x3*_DmInverse;
+  x3 = x3*DmInverse;
   result.push_back(x3);
 
   //compute dF/x4 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x4;
   x4.setZero();
   x4(0,1) = 1;
-  x4 = x4*_DmInverse;
+  x4 = x4*DmInverse;
   result.push_back(x4);
 
   //compute dF/x5 of [[[ x2 - x0], [x3 - x1]], [[ x4 - x0], [x5 - x1]]]
   MATRIX2 x5;
   x5.setZero();
   x5(1,1) = 1;
-  x5 = x5*_DmInverse;
+  x5 = x5*DmInverse;
   result.push_back(x5);
 
   return result;

@@ -49,7 +49,7 @@ private:
   VEC2 _restPose[3];
 
   MATRIX2 _Dm;
-  MATRIX2 _DmInverse;
+  MATRIX _pfpu;
   MATRIX6 _linearCoef;
 
   // material model

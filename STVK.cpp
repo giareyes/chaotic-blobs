@@ -44,8 +44,8 @@ MATRIX STVK::DPDF(const MATRIX& F)
 {
   //derivative w.r.t. f0
   MATRIX2 df0;
-  df0(0,0) = 4*_mu*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) - 1)
-              + 2*_lambda*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) + pow(F(1,1), 2) - 2);
+  df0(0,0) = 4*_mu*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2)) 
+              + 2*_lambda*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) + pow(F(1,1), 2));
   df0(1,0) = 4*_mu*(2*F(1,0)*F(0,0) + F(0,1)*F(1,1)) + 4*_lambda*F(0,0)*F(1,0);
   df0(0,1) = 4*_mu*(2*F(0,1)*F(0,0) + F(1,0)*F(1,1)) + 4*_lambda*F(0,0)*F(0,1);
   df0(1,1) = 4*_mu*F(1,0)*F(0,1) + 4*_lambda*F(0,0)*F(1,1);
@@ -53,8 +53,8 @@ MATRIX STVK::DPDF(const MATRIX& F)
   //derivative w.r.t. f1
   MATRIX2 df1;
   df1(0,0) = 4*_mu*(2*F(0,0)*F(1,0) + F(0,1)*F(1,1)) + 4*_lambda*F(0,0)*F(1,0);
-  df1(1,0) = 4*_mu*(pow(F(0,0), 2) + 3*pow(F(1,0), 2) + pow(F(1,1), 2) - 1)
-              + 2*_lambda*(pow(F(0,0), 2) + 3*pow(F(1,0), 2) + pow(F(0,1), 2) + pow(F(1,1), 2) - 2);
+  df1(1,0) = 4*_mu*(pow(F(0,0), 2) + 3*pow(F(1,0), 2) + pow(F(1,1), 2))
+              + 2*_lambda*(pow(F(0,0), 2) + 3*pow(F(1,0), 2) + pow(F(0,1), 2) + pow(F(1,1), 2));
   df1(0,1) = 4*_mu*F(0,0)*F(1,1) + 4*_lambda*F(1,0)*F(0,1);
   df1(1,1) = 4*_mu*(2*F(1,0)*F(1,1) + F(0,0)*F(0,1)) + 4*_lambda*F(1,0)*F(1,1);
 
@@ -62,8 +62,8 @@ MATRIX STVK::DPDF(const MATRIX& F)
   MATRIX2 df2;
   df2(0,0) = 4*_mu*(2*F(0,0)*F(0,1) + F(1,0)*F(1,1)) + 4*_lambda*F(0,0)*F(0,1);
   df2(1,0) = 4*_mu*F(0,0)*F(1,1) + 4*_lambda*F(1,0)*F(0,1);
-  df2(0,1) = 4*_mu*(pow(F(0,0), 2) + 3*pow(F(0,1), 2) + pow(F(1,1), 2) - 1)
-              + 2*_lambda*(pow(F(0,0), 2) + pow(F(1,0), 2) + 3*pow(F(0,1), 2) + pow(F(1,1), 2) - 2);
+  df2(0,1) = 4*_mu*(pow(F(0,0), 2) + 3*pow(F(0,1), 2) + pow(F(1,1), 2))
+              + 2*_lambda*(pow(F(0,0), 2) + pow(F(1,0), 2) + 3*pow(F(0,1), 2) + pow(F(1,1), 2));
   df2(1,1) = 4*_mu*(2*F(0,1)*F(1,1) + F(0,0)*F(1,0)) + 4*_lambda*F(0,1)*F(1,1);
 
   //derivative w.r.t. f3
@@ -71,8 +71,8 @@ MATRIX STVK::DPDF(const MATRIX& F)
   df3(0,0) = 4*_mu*F(1,0)*F(0,1) + 4*_lambda*F(0,0)*F(1,1);
   df3(1,0) = 4*_mu*(F(0,1)*F(0,0) + 2*F(1,0)*F(1,1)) + 4*_lambda*F(1,0)*F(1,1);
   df3(0,1) = 4*_mu*(F(1,0)*F(0,0) + 2*F(0,1)*F(1,1)) + 4*_lambda*F(0,1)*F(1,1);
-  df3(1,1) = 4*_mu*(3*pow(F(1,1), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) - 1)
-              + 2*_lambda*(pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) + 3*pow(F(1,1), 2) - 2);
+  df3(1,1) = 4*_mu*(3*pow(F(1,1), 2) + pow(F(1,0), 2) + pow(F(0,1), 2))
+              + 2*_lambda*(pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) + 3*pow(F(1,1), 2));
 
   MATRIX4 hessian;
   hessian.col(0) = vectorize(df0);
