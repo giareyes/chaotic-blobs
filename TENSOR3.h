@@ -1,11 +1,13 @@
 #include "EXTRAFUNCTIONS.h"
 
+using namespace std;
 
 class TENSOR3
 {
 public:
+  TENSOR3();
   TENSOR3(int rows, int cols, int slabs);
-  TENSOR3(const vector<MATRIX>& slabs);
+  TENSOR3(const std::vector<MATRIX>& slabs);
 
   int rows() const { return _rows; };
   int cols() const { return _cols; };
@@ -19,5 +21,5 @@ protected:
   int _cols;
   int _slabs;
 
-  vector<MATRIX> _tensor;
-}
+  MATRIX* _tensor;
+};
