@@ -1,4 +1,5 @@
-#include "EXTRAFUNCTIONS.h"
+#include "../EXTRAFUNCTIONS.h"
+#include <vector>
 
 using namespace std;
 
@@ -16,10 +17,12 @@ public:
 
   MATRIX modeThreeProduct(const VECTOR& x);
   TENSOR3 modeThreeProduct(const MATRIX& x);
+
+  void toString();
 protected:
   int _rows;
   int _cols;
   int _slabs;
 
-  MATRIX* _tensor;
+  vector<MATRIX> _tensor;
 };
