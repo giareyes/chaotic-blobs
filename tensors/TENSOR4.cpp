@@ -107,7 +107,7 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
     result.push_back(temp);
   }
 
-  for(int k = 0; k < _slab_rows; k++)
+  for(int k = 0; k < _slab_cols; k++)
   {
     for(int i = 0; i < x.rows(); i++)
     {
@@ -191,11 +191,10 @@ int main(int argc, char** argv)
 
   TENSOR4 fourTensor(vec_tens);
 
-  // result1 = C * df/dx * x
+  // result1 = C * df/dx * df/dx * x * x
   TENSOR4 fourth_res = fourTensor.modeFourProduct(x);
-  // fourth_res = fourth_res.modeThreeProduct(x);
+  fourth_res = fourth_res.modeThreeProduct(x);
   TENSOR3 t3_1 = fourth_res.modeFourProduct(vec);
-  t3_1 = t3_1.modeThreeProduct(x);
   MATRIX result1 = t3_1.modeThreeProduct(vec);
 
   // result2 = C * [df/dx T  * x] * [df/dx T  * x]
@@ -205,10 +204,8 @@ int main(int argc, char** argv)
 
   printf("\n\n\n------------------------- result 1 ----------------------------\n\n\n");
   printMatrix(result1);
-  // t3_1.toString();
   printf("\n\n\n------------------------- result 2 ----------------------------\n\n\n");
   printMatrix(result2);
-  // t3_2.toString();
 
   return 1;
 }
