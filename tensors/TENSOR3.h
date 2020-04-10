@@ -17,7 +17,7 @@ public:
 
   MATRIX modeThreeProduct(const VECTOR& x);
   TENSOR3 modeThreeProduct(const MATRIX& x);
-  TENSOR3 multiply(double x);
+  TENSOR3& operator+=(const TENSOR3& m);
 
   void toString();
 

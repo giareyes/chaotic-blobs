@@ -93,3 +93,15 @@ TENSOR3 TENSOR3::modeThreeProduct(const MATRIX& x)
 
   return result_tensor;
 }
+
+TENSOR3& TENSOR3::operator+=(const TENSOR3& m)
+{
+  assert(_rows == m.rows());
+  assert(_cols == m.cols());
+  assert(_slabs == m.slabs());
+
+  for (int z = 0; z < _slabs; z++)
+    _tensor[z] += m._tensor[z];
+
+  return *this;
+}

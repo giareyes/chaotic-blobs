@@ -64,7 +64,8 @@ void TENSOR4::toString()
 
 TENSOR4 TENSOR4::modeFourProduct(const MATRIX& x)
 {
-  // need to look at cols x slabs matrices ???
+  // must make sure that the columns of the matrix we are multiplying match the
+  // number of slab columns in our tensor
   assert( x.cols() == _slab_cols);
 
   vector<TENSOR3> result;
@@ -74,6 +75,9 @@ TENSOR4 TENSOR4::modeFourProduct(const MATRIX& x)
     result.push_back(temp);
   }
 
+  // loop through all of the slabs in the tensor, multiply by every constant in the
+  // matrix x, and add together.
+  // Equation: result(a,b,c,d) = sum[i_n = 0 to i_n = x.cols()] (tensor(a,b,c,i_n)*x(d, i_n))
   for(int k = 0; k < _slab_rows; k++)
   {
     for(int i = 0; i < x.rows(); i++)
@@ -97,9 +101,13 @@ TENSOR4 TENSOR4::modeFourProduct(const MATRIX& x)
 
 TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
 {
-  // need to look at cols x slabs matrices ???
+  // need to make sure that the number of columns in the matrix x match
+  // the number of rows in the tensor
   assert( x.cols() == _slab_rows);
 
+  // initialize the vector of third order tensors that will become our
+  // resulting fourth order tensor. We must initialize because we are
+  // altering rows, not columns, so it works better this way.
   vector<TENSOR3> result;
   for(int p = 0; p < _slab_cols; p++)
   {
@@ -107,6 +115,9 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
     result.push_back(temp);
   }
 
+  // loop through all of the slabs in the tensor, multiply by every constant in the
+  // matrix x, and add together.
+  // Equation: result(a,b,c,d) = sum[i_n = 0 to i_n = x.cols()] (tensor(a,b,i_n,d)*x(c, i_n))
   for(int k = 0; k < _slab_cols; k++)
   {
     for(int i = 0; i < x.rows(); i++)
@@ -127,6 +138,52 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
 
   return result_tensor;
 }
+
+TENSOR4& TENSOR4::operator+=(const TENSOR4& m)
+{
+  assert(_rows == m.rows());
+  assert(_cols == m.cols());
+  assert(_slab_rows == m.slab_rows());
+  assert(_slab_cols == m.slab_cols());
+
+  for (int z = 0; z < _slab_cols; z++)
+  {
+      _tensor[z] += m._tensor[z];
+  }
+
+  return *this;
+}
+// TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
+// {
+//   assert( x.cols() == _cols);
+//
+//   vector<TENSOR3> result;
+//   for(int p = 0; p < _slab_cols; p++)
+//   {
+//     TENSOR3 temp(_rows, _cols, x.rows());
+//     result.push_back(temp);
+//   }
+//
+//   for(int k = 0; k < _slab_cols; k++)
+//   {
+//     for(int i = 0; i < x.rows(); i++)
+//     {
+//       for(int j = 0; j < x.cols(); j++)
+//       {
+//         MATRIX mid = _tensor[k]._tensor[j] * x(i,j);
+//         result[k]._tensor[i] += mid;
+//       }
+//     }
+//   }
+//
+//   TENSOR4 result_tensor(result);
+//
+//   // free result ?
+//   // for (int i = 0; i < _rows; i++)
+//   //   result[i].resize(0,0);
+//
+//   return result_tensor;
+// }
 
 void printMatrix(MATRIX matrix)
 {
@@ -196,9 +253,12 @@ int main(int argc, char** argv)
   fourth_res = fourth_res.modeThreeProduct(x);
   TENSOR3 t3_1 = fourth_res.modeFourProduct(vec);
   MATRIX result1 = t3_1.modeThreeProduct(vec);
+  // result1 = result1*3;
 
   // result2 = C * [df/dx T  * x] * [df/dx T  * x]
   VECTOR result = x.transpose() * vec;
+  // for(int i = 0; i < 3; i++)
+  //   fourTensor += fourTensor;
   TENSOR3 t3_2 = fourTensor.modeFourProduct(result);
   MATRIX result2 = t3_2.modeThreeProduct(result);
 

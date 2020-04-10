@@ -17,6 +17,9 @@ public:
   TENSOR4 modeFourProduct(const MATRIX& x);
 
   TENSOR4 modeThreeProduct(const MATRIX& x);
+  TENSOR4 modeTwoProduct(const MATRIX& x);
+
+  TENSOR4& operator+=(const TENSOR4& m);
 
   vector<TENSOR3> _tensor;
 protected:
