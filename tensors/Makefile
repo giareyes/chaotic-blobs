@@ -8,7 +8,8 @@ CFLAGS     = ${CFLAGS_COMMON} -O3
 LDFLAGS    = ${LDFLAGS_COMMON}
 EXECUTABLE = tensors
 
-SOURCES    = TENSOR3.cpp
+SOURCES    = TENSOR3.cpp \
+						 TENSOR4.cpp
 OBJECTS    = $(SOURCES:.cpp=.o)
 
 all: $(SOURCES) $(EXECUTABLE)

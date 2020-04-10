@@ -51,6 +51,7 @@ MATRIX TENSOR3::modeThreeProduct(const VECTOR& x)
   return result;
 }
 
+
 void TENSOR3::toString()
 {
   for(int k = 0; k < _slabs; k++)
@@ -72,77 +73,50 @@ void TENSOR3::toString()
 TENSOR3 TENSOR3::modeThreeProduct(const MATRIX& x)
 {
   // need to look at cols x slabs matrices ???
-  assert(x.rows() == _slabs || x.cols() == _slabs);
-
-  // i guess we can create a new tensor 3, and put all of the info inside through loops to reorder rows/cols/slabs
-  // vector<MATRIX> reordered;
-  // for(int i = 0; i < _rows; i++)
-  // {
-  //   MATRIX m(_cols, _slabs);
-  //   m.setZero();
-  //
-  //   for(int k = 0; k < _slabs; k++)
-  //   {
-  //     m.col(k) = _tensor[k].row(i);
-  //   }
-  //   reordered.push_back(m);
-  // }
+  assert( x.cols() == _slabs);
 
   vector<MATRIX> result;
-  //
-  // if(x.rows() == _slabs)
-  // {
-  for(int j = 0; j < x.cols(); j++)
+
+  for(int i = 0; i < x.rows(); i++)
   {
-    MATRIX m()
-    for(int i = 0; i < _rows; i++)
+    MATRIX m(_rows, _cols);
+    m.setZero();
+    for(int j = 0; j < x.cols(); j++)
     {
-      MATRIX mid = reordered[i] * x;
-      result.push_back(mid);
+      MATRIX mid = _tensor[j] * x(i,j);
+      m += mid;
     }
+    result.push_back(m);
   }
-  // }
-  // else
-  // {
-  //   for(int i = 0; i < _rows; i++)
-  //   {
-  //     MATRIX mid = reordered[i] * x;
-  //     result[i] = mid;
-  //   }
-  // }
-  //
+
   TENSOR3 result_tensor(result);
-  //
-  // // free reordered ?
-  // for (int i = 0; i < _rows; i++)
-  //   reordered[i].clear();
-  //
-  // // free result ?
-  // for (int i = 0; i < _rows; i++)
-  //   result[i].clear();
-  //
+
+  // free result ?
+  for (int i = 0; i < _rows; i++)
+    result[i].resize(0,0);
+
   return result_tensor;
 }
 
-int main(int argc, char** argv)
-{
-  vector<MATRIX> matrix_vector;
-  MATRIX x(4,4);
-  x.setZero();
-  // VECTOR vec(4);
-
-  for(int i = 0; i < 4; i++)
-  {
-    MATRIX m(4,4);
-    m.setIdentity();
-    matrix_vector.push_back(m);
-
-    x(i,i) = 2;
-    // vec[i] = 3;
-  }
-
-  TENSOR3 newTensor(matrix_vector);
-  TENSOR3 result = newTensor.modeThreeProduct(x);
-  result.toString();
-  return 1;
-}
+// int main(int argc, char** argv)
+// {
+//   vector<MATRIX> matrix_vector;
+//   MATRIX x(6,4);
+//   x.setZero();
+//   // VECTOR vec(4);
+//
+//   for(int i = 0; i < 4; i++)
+//   {
+//     MATRIX m(4,4);
+//     m.setIdentity();
+//     matrix_vector.push_back(m);
+//
+//     x(i,i) = 2;
+//     // vec[i] = 3;
+//   }
+//
+//   TENSOR3 newTensor(matrix_vector);
+//   TENSOR3 result = newTensor.modeThreeProduct(x);
+//   result.toString();
+//   return 1;
+// }

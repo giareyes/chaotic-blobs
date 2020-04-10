@@ -1,5 +1,5 @@
-#include "EXTRAFUNCTIONS.h"
 #include "TENSOR3.h"
+#include <vector>
 
 class TENSOR4
 {
@@ -12,14 +12,17 @@ public:
   int slab_rows() const { return _slab_rows; };
   int slab_cols() const { return _slab_cols; };
 
-
-  MATRIX modeFourProduct(const VECTOR& x);
+  void toString();
+  TENSOR3 modeFourProduct(const VECTOR& x);
   TENSOR4 modeFourProduct(const MATRIX& x);
+
+  TENSOR4 modeThreeProduct(const MATRIX& x);
+
+  vector<TENSOR3> _tensor;
 protected:
   int _rows;
   int _cols;
   int _slab_rows;
   int _slab_cols;
 
-  vector<MATRIX> _tensor;
-}
+};

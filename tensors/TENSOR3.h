@@ -17,12 +17,13 @@ public:
 
   MATRIX modeThreeProduct(const VECTOR& x);
   TENSOR3 modeThreeProduct(const MATRIX& x);
+  TENSOR3 multiply(double x);
 
   void toString();
+
+  vector<MATRIX> _tensor;
 protected:
   int _rows;
   int _cols;
   int _slabs;
-
-  vector<MATRIX> _tensor;
 };
