@@ -8,8 +8,6 @@ TENSOR3::TENSOR3(int rows, int cols, int slabs)
   _cols = cols;
   _slabs = slabs;
 
-  // _tensor = new MATRIX[slabs];
-
   for (int x = 0; x < slabs; x++)
   {
     MATRIX m(rows, cols);
@@ -25,8 +23,6 @@ TENSOR3::TENSOR3(const std::vector<MATRIX>& slabs)
   _rows = slabs[0].rows();
   _cols = slabs[0].cols();
   _slabs = slabs.size();
-
-  // _tensor = new MATRIX[slabs.size()];
 
   for (int x = 0; x < _slabs; x++)
   {
@@ -97,26 +93,3 @@ TENSOR3 TENSOR3::modeThreeProduct(const MATRIX& x)
 
   return result_tensor;
 }
-
-// int main(int argc, char** argv)
-// {
-//   vector<MATRIX> matrix_vector;
-//   MATRIX x(6,4);
-//   x.setZero();
-//   // VECTOR vec(4);
-//
-//   for(int i = 0; i < 4; i++)
-//   {
-//     MATRIX m(4,4);
-//     m.setIdentity();
-//     matrix_vector.push_back(m);
-//
-//     x(i,i) = 2;
-//     // vec[i] = 3;
-//   }
-//
-//   TENSOR3 newTensor(matrix_vector);
-//   TENSOR3 result = newTensor.modeThreeProduct(x);
-//   result.toString();
-//   return 1;
-// }
