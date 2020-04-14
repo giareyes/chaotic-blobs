@@ -153,37 +153,82 @@ TENSOR4& TENSOR4::operator+=(const TENSOR4& m)
 
   return *this;
 }
-// TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
-// {
-//   assert( x.cols() == _cols);
-//
-//   vector<TENSOR3> result;
-//   for(int p = 0; p < _slab_cols; p++)
-//   {
-//     TENSOR3 temp(_rows, _cols, x.rows());
-//     result.push_back(temp);
-//   }
-//
-//   for(int k = 0; k < _slab_cols; k++)
-//   {
-//     for(int i = 0; i < x.rows(); i++)
-//     {
-//       for(int j = 0; j < x.cols(); j++)
-//       {
-//         MATRIX mid = _tensor[k]._tensor[j] * x(i,j);
-//         result[k]._tensor[i] += mid;
-//       }
-//     }
-//   }
-//
-//   TENSOR4 result_tensor(result);
-//
-//   // free result ?
-//   // for (int i = 0; i < _rows; i++)
-//   //   result[i].resize(0,0);
-//
-//   return result_tensor;
-// }
+
+TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
+{
+  assert( x.cols() == _cols);
+
+  vector<TENSOR3> result;
+  for(int p = 0; p < _slab_cols; p++)
+  {
+    TENSOR3 temp(_rows, x.rows(), _slab_rows);
+    result.push_back(temp);
+  }
+
+  // Hi, I'm really sorry about the code below, it's shameful
+  for(int k = 0; k < _slab_cols; k++)
+  {
+    for(int l = 0; l < _slab_rows; l++)
+    {
+      for(int i = 0; i < x.rows(); i++)
+      {
+        for(int m = 0; m < _rows; m++)
+        {
+          for(int j = 0; j < x.cols(); j++)
+          {
+            result[k]._tensor[l](m,i) += _tensor[k]._tensor[l](m,j) * x(i,j);
+          }
+        }
+      }
+    }
+  }
+
+  TENSOR4 result_tensor(result);
+
+  // free result ?
+  // for (int i = 0; i < _rows; i++)
+  //   result[i].resize(0,0);
+
+  return result_tensor;
+}
+
+TENSOR4 TENSOR4::modeOneProduct(const MATRIX& x)
+{
+  assert( x.cols() == _rows);
+
+  vector<TENSOR3> result;
+  for(int p = 0; p < _slab_cols; p++)
+  {
+    TENSOR3 temp(x.rows(), _cols, _slab_rows);
+    result.push_back(temp);
+  }
+
+  // Hi, I'm really sorry about the code below, it's shameful
+  for(int k = 0; k < _slab_cols; k++)
+  {
+    for(int l = 0; l < _slab_rows; l++)
+    {
+      for(int i = 0; i < x.rows(); i++)
+      {
+        for(int m = 0; m < _cols; m++)
+        {
+          for(int j = 0; j < x.cols(); j++)
+          {
+            result[k]._tensor[l](i,m) += _tensor[k]._tensor[l](j,m) * x(i,j);
+          }
+        }
+      }
+    }
+  }
+
+  TENSOR4 result_tensor(result);
+
+  // free result ?
+  // for (int i = 0; i < _rows; i++)
+  //   result[i].resize(0,0);
+
+  return result_tensor;
+}
 
 void printMatrix(MATRIX matrix)
 {
@@ -238,7 +283,7 @@ int main(int argc, char** argv)
     vec_tens.push_back(temp);
   }
 
-  for(int i = 0; i < 12; i++)
+  for(int i = 0; i < 24; i++)
   {
     int rand_x = rand() % 6;
     int rand_y = rand() % 4;
@@ -251,18 +296,24 @@ int main(int argc, char** argv)
   // result1 = C * df/dx * df/dx * x * x
   TENSOR4 fourth_res = fourTensor.modeFourProduct(x);
   fourth_res = fourth_res.modeThreeProduct(x);
+  fourth_res = fourth_res.modeTwoProduct(x);
+  fourth_res = fourth_res.modeOneProduct(x);
   TENSOR3 t3_1 = fourth_res.modeFourProduct(vec);
   MATRIX result1 = t3_1.modeThreeProduct(vec);
-  // result1 = result1*3;
+
+  // result1 = x * result1;
+  // result1 = result1 * x.transpose();
 
   // result2 = C * [df/dx T  * x] * [df/dx T  * x]
   VECTOR result = x.transpose() * vec;
-  // for(int i = 0; i < 3; i++)
-  //   fourTensor += fourTensor;
   TENSOR3 t3_2 = fourTensor.modeFourProduct(result);
   MATRIX result2 = t3_2.modeThreeProduct(result);
 
+  result2 = x * result2;
+  result2 = result2 * x.transpose();
+
   printf("\n\n\n------------------------- result 1 ----------------------------\n\n\n");
+  // fourth_res.toString();
   printMatrix(result1);
   printf("\n\n\n------------------------- result 2 ----------------------------\n\n\n");
   printMatrix(result2);
