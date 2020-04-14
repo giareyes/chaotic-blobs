@@ -65,6 +65,12 @@ void TENSOR3::toString()
   }
 }
 
+void TENSOR3::clear()
+{
+  for (int x = 0; x < _slabs; x++)
+    _tensor[x].resize(0,0);
+}
+
 TENSOR3 TENSOR3::modeThreeProduct(const MATRIX& x)
 {
   // need to look at cols x slabs matrices ???

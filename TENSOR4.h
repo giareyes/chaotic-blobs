@@ -4,6 +4,7 @@
 class TENSOR4
 {
 public:
+  TENSOR4();
   TENSOR4(int rows, int cols, int slab_rows, int slab_cols);
   TENSOR4(const vector<TENSOR3>& slabs);
 
@@ -13,10 +14,14 @@ public:
   int slab_cols() const { return _slab_cols; };
 
   void toString();
+  void clear();
+
   TENSOR3 modeFourProduct(const VECTOR& x);
   TENSOR4 modeFourProduct(const MATRIX& x);
 
   TENSOR4 modeThreeProduct(const MATRIX& x);
+  TENSOR4 modeTwoProduct(const MATRIX& x);
+  TENSOR4 modeOneProduct(const MATRIX& x);
 
   vector<TENSOR3> _tensor;
 protected:

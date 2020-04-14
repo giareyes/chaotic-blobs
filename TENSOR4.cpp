@@ -2,6 +2,13 @@
 // #include "EXTRAFUNCTIONS.h"
 #include <stdlib.h>
 
+TENSOR4::TENSOR4()
+{
+  _rows = 0;
+  _cols = 0;
+  _slab_rows = 0;
+  _slab_cols = 0;
+}
 
 TENSOR4::TENSOR4(int rows, int cols, int slab_rows, int slab_cols)
 {
@@ -93,8 +100,8 @@ TENSOR4 TENSOR4::modeFourProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  // for (int i = 0; i < _rows; i++)
-  //   result[i].resize(0,0);
+  for (int i = 0; i < _rows; i++)
+    result[i].clear();
 
   return result_tensor;
 }
@@ -133,8 +140,90 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  // for (int i = 0; i < _rows; i++)
-  //   result[i].resize(0,0);
+  for (int i = 0; i < _rows; i++)
+    result[i].clear();
 
   return result_tensor;
+}
+
+TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
+{
+  assert( x.cols() == _cols);
+
+  vector<TENSOR3> result;
+  for(int p = 0; p < _slab_cols; p++)
+  {
+    TENSOR3 temp(_rows, x.rows(), _slab_rows);
+    result.push_back(temp);
+  }
+
+  // Hi, I'm really sorry about the code below, it's shameful
+  for(int k = 0; k < _slab_cols; k++)
+  {
+    for(int l = 0; l < _slab_rows; l++)
+    {
+      for(int i = 0; i < x.rows(); i++)
+      {
+        for(int m = 0; m < _rows; m++)
+        {
+          for(int j = 0; j < x.cols(); j++)
+          {
+            result[k]._tensor[l](m,i) += _tensor[k]._tensor[l](m,j) * x(i,j);
+          }
+        }
+      }
+    }
+  }
+
+  TENSOR4 result_tensor(result);
+
+  // free result ?
+  for (int i = 0; i < _rows; i++)
+    result[i].clear();
+
+  return result_tensor;
+}
+
+TENSOR4 TENSOR4::modeOneProduct(const MATRIX& x)
+{
+  assert( x.cols() == _rows);
+
+  vector<TENSOR3> result;
+  for(int p = 0; p < _slab_cols; p++)
+  {
+    TENSOR3 temp(x.rows(), _cols, _slab_rows);
+    result.push_back(temp);
+  }
+
+  // Hi, I'm really sorry about the code below, it's shameful
+  for(int k = 0; k < _slab_cols; k++)
+  {
+    for(int l = 0; l < _slab_rows; l++)
+    {
+      for(int i = 0; i < x.rows(); i++)
+      {
+        for(int m = 0; m < _cols; m++)
+        {
+          for(int j = 0; j < x.cols(); j++)
+          {
+            result[k]._tensor[l](i,m) += _tensor[k]._tensor[l](j,m) * x(i,j);
+          }
+        }
+      }
+    }
+  }
+
+  TENSOR4 result_tensor(result);
+
+  // free result ?
+  for (int i = 0; i < _rows; i++)
+    result[i].clear();
+
+  return result_tensor;
+}
+
+void TENSOR4::clear()
+{
+  for (int x = 0; x < _slab_cols; x++)
+    _tensor[x].clear();
 }

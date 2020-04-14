@@ -10,12 +10,12 @@ EXECUTABLE = blob
 
 SOURCES    = blobs.cpp \
 						 STVK.cpp \
+						 TENSOR3.cpp \
+						 TENSOR4.cpp \
 						 TRIANGLE_MESH.cpp \
 						 TRIANGLE.cpp \
 						 EXTRAFUNCTIONS.cpp \
-						 WALL.cpp \
-						 TENSOR3.cpp \
-						 TENSOR4.cpp
+						 WALL.cpp
 OBJECTS    = $(SOURCES:.cpp=.o)
 
 all: $(SOURCES) $(EXECUTABLE)

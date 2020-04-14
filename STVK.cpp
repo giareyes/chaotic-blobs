@@ -44,7 +44,7 @@ MATRIX STVK::DPDF(const MATRIX& F)
 {
   //derivative w.r.t. f0
   MATRIX2 df0;
-  df0(0,0) = 4*_mu*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2)) 
+  df0(0,0) = 4*_mu*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2))
               + 2*_lambda*(3*pow(F(0,0), 2) + pow(F(1,0), 2) + pow(F(0,1), 2) + pow(F(1,1), 2));
   df0(1,0) = 4*_mu*(2*F(1,0)*F(0,0) + F(0,1)*F(1,1)) + 4*_lambda*F(0,0)*F(1,0);
   df0(0,1) = 4*_mu*(2*F(0,1)*F(0,0) + F(1,0)*F(1,1)) + 4*_lambda*F(0,0)*F(0,1);

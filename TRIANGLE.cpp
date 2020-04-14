@@ -22,8 +22,8 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     _Dm.col(0) = e0;
     _Dm.col(1) = e1;
 
-    Real lambda = _material->getLambda();
-    Real mu = _material->getMu();
+    _lambda = _material->getLambda();
+    _mu = _material->getMu();
 
     // create the linear coefficient matrix below:
     // as it turns out, the linear coefficient matrix is equal to the constant matrix, and
@@ -32,7 +32,133 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     _linearCoef = _pfpu.transpose() * _pfpu;
 
     // multiply by (-4*mu - 4*lambda)*-1*restArea
-    _linearCoef = restArea()*(4*mu + 4*lambda)*_linearCoef;
+    _linearCoef = restArea()*(4*_mu + 4*_lambda)*_linearCoef;
+
+    // create the _quadraticCoef
+    vector<TENSOR3> slab_cols;
+    for(int i = 0; i < 4; i++)
+    {
+      TENSOR3 row(4, 4, 4);
+      if(i == 0)
+      {
+        row._tensor[0](0,0) = 3;
+        row._tensor[0](1,1) = 1;
+        row._tensor[0](2,2) = 1;
+
+        row._tensor[1](0,1) = 2;
+        row._tensor[1](2,3) = 1;
+
+        row._tensor[2](0,2) = 2;
+        row._tensor[2](1,3) = 1;
+
+        row._tensor[3](2,1) = 1;
+      }
+      if(i == 1)
+      {
+        row._tensor[0](1,0) = 2;
+        row._tensor[0](3,2) = 1;
+
+        row._tensor[1](0,0) = 1;
+        row._tensor[1](1,1) = 3;
+        row._tensor[1](3,3) = 1;
+
+        row._tensor[2](3,0) = 1;
+
+        row._tensor[3](0,2) = 1;
+        row._tensor[3](1,3) = 2;
+      }
+      if(i == 2)
+      {
+        row._tensor[0](2,0) = 2;
+        row._tensor[0](3,1) = 1;
+
+        row._tensor[1](0,3) = 1;
+
+        row._tensor[2](0,0) = 1;
+        row._tensor[2](2,2) = 3;
+        row._tensor[2](3,3) = 1;
+
+        row._tensor[3](0,1) = 1;
+        row._tensor[3](2,3) = 2;
+      }
+      if(i == 3)
+      {
+        row._tensor[0](1,2) = 1;
+
+        row._tensor[1](2,0) = 1;
+        row._tensor[1](3,1) = 2;
+
+        row._tensor[2](1,0) = 1;
+        row._tensor[2](3,2) = 2;
+
+        row._tensor[3](1,1) = 1;
+        row._tensor[3](2,2) = 1;
+        row._tensor[3](3,3) = 3;
+      }
+      slab_cols.push_back(row);
+      row.clear();
+    }
+
+    TENSOR4 quad(slab_cols);
+    _quadraticCoef = quad;
+    MATRIX pfputrans = _pfpu.transpose();
+    _quadraticCoef = _quadraticCoef.modeFourProduct(pfputrans);
+    _quadraticCoef = _quadraticCoef.modeThreeProduct(pfputrans);
+    _quadraticCoef = _quadraticCoef.modeTwoProduct(pfputrans);
+    _quadraticCoef = _quadraticCoef.modeOneProduct(pfputrans);
+
+    TENSOR4 _quadLambda(4,4,4,4);
+    // column 0
+    // row 0
+    _quadLambda._tensor[0]._tensor[0].setIdentity();
+    _quadLambda._tensor[0]._tensor[0](0,0) = 3;
+
+    // column 1
+    //row 0
+    _quadLambda._tensor[1]._tensor[0](0,1) = 2;
+    _quadLambda._tensor[1]._tensor[0](1,0) = 2;
+
+    //row 1
+    _quadLambda._tensor[1]._tensor[1].setIdentity();
+    _quadLambda._tensor[1]._tensor[1](1,1) = 3;
+
+    // column 2
+    //row 0
+    _quadLambda._tensor[2]._tensor[0](0,2) = 2;
+    _quadLambda._tensor[2]._tensor[0](2,0) = 2;
+
+    //row 1
+    _quadLambda._tensor[2]._tensor[1](1,2) = 2;
+    _quadLambda._tensor[2]._tensor[1](2,1) = 2;
+
+    //row 2
+    _quadLambda._tensor[2]._tensor[2].setIdentity();
+    _quadLambda._tensor[2]._tensor[2](2,2) = 3;
+
+    // column 3
+    //row 0
+    _quadLambda._tensor[3]._tensor[0](0,3) = 2;
+    _quadLambda._tensor[3]._tensor[0](3,0) = 2;
+
+    //row 1
+    _quadLambda._tensor[3]._tensor[1](1,3) = 2;
+    _quadLambda._tensor[3]._tensor[1](3,1) = 2;
+
+    //row 2
+    _quadLambda._tensor[3]._tensor[2](2,3) = 2;
+    _quadLambda._tensor[3]._tensor[2](3,2) = 2;
+
+    //row 3
+    _quadLambda._tensor[3]._tensor[3].setIdentity();
+    _quadLambda._tensor[3]._tensor[3](3,3) = 3;
+
+    _quadraticCoef_lambda = _quadLambda;
+    _quadraticCoef_lambda = _quadraticCoef_lambda.modeFourProduct(pfputrans);
+    _quadraticCoef_lambda = _quadraticCoef_lambda.modeThreeProduct(pfputrans);
+    _quadraticCoef_lambda = _quadraticCoef_lambda.modeTwoProduct(pfputrans);
+    _quadraticCoef_lambda = _quadraticCoef_lambda.modeOneProduct(pfputrans);
+
+    pfputrans.resize(0,0);
 
 }
 
@@ -90,6 +216,29 @@ VECTOR TRIANGLE::precomputedLinearCoef()
   return linearForce;
 }
 
+MATRIX TRIANGLE::precomputedQuadCoef()
+{
+  MATRIX quadForce(6,6);
+
+  VECTOR pos(6);
+  for(int i = 0; i < 3; i++)
+  {
+    pos[2*i] = (*_vertices[i])[0];
+    pos[2*i + 1] = (*_vertices[i])[1];
+  }
+
+  TENSOR3 quadTensorMu = _quadraticCoef.modeFourProduct(pos);
+  TENSOR3 quadTensorLambda = _quadraticCoef_lambda.modeFourProduct(pos);
+
+  quadForce = -1*restArea()*4*_mu*quadTensorMu.modeThreeProduct(pos);
+  quadForce = quadForce + -1*restArea()*2*_lambda*quadTensorLambda.modeThreeProduct(pos);
+
+  quadTensorMu.clear();
+  quadTensorLambda.clear();
+
+  return  quadForce;
+}
+
 ///////////////////////////////////////////////////////////////////////
 // populate the force vector
 ///////////////////////////////////////////////////////////////////////
@@ -122,7 +271,10 @@ MATRIX TRIANGLE::computeForceJacobian()
   dpdf = -1*restArea()*dpdf;
 
   // d^2 psi/ dx^2 = A transpose * B * A
-  jacobian = (_pfpu.transpose() * dpdf * _pfpu) + _linearCoef;
+  jacobian = precomputedQuadCoef() + _linearCoef;
+
+  //without precomputed tensors
+  // jacobian = (_pfpu.transpose() * dpdf * _pfpu) + _linearCoef;
 
   return jacobian;
 }

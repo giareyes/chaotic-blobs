@@ -3,6 +3,7 @@
 
 #include "SETTINGS.h"
 #include "MATERIAL.h"
+#include "TENSOR4.h"
 #include "EXTRAFUNCTIONS.h"
 #include <vector>
 
@@ -36,6 +37,8 @@ public:
 
   VECTOR precomputedLinearCoef();
 
+  MATRIX precomputedQuadCoef();
+
   // compute rest area of this triangle
   Real restArea() const;
   Real area() const;
@@ -48,9 +51,17 @@ private:
   VEC2* _vertices[3];
   VEC2 _restPose[3];
 
+  Real _mu;
+  Real _lambda;
+
   MATRIX2 _Dm;
   MATRIX _pfpu;
   MATRIX6 _linearCoef;
+
+  // this is only a vector bc idk how to make the compiler not angry
+  // i only need one
+  TENSOR4 _quadraticCoef;
+  TENSOR4 _quadraticCoef_lambda;
 
   // material model
   MATERIAL* _material;

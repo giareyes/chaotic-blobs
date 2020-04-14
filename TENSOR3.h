@@ -21,6 +21,8 @@ public:
 
   void toString();
 
+  void clear();
+
   vector<MATRIX> _tensor;
 protected:
   int _rows;
