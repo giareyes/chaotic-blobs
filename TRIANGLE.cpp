@@ -158,6 +158,34 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     _quadraticCoef_lambda = _quadraticCoef_lambda.modeTwoProduct(pfputrans);
     _quadraticCoef_lambda = _quadraticCoef_lambda.modeOneProduct(pfputrans);
 
+    TENSOR4 cubic(4,4,4,4);
+    TENSOR4 cubic_lambda(4,4,4,4);
+
+    for(int i = 0; i < 4; i++)
+    {
+      cubic_lambda._tensor[i]._tensor[i].setIdentity();
+      cubic._tensor[i]._tensor[i].setIdentity();
+      cubic._tensor[i]._tensor[i](3-i, 3-i) = 0;
+    }
+
+    cubic._tensor[0]._tensor[1](3, 2) = 1;
+    cubic._tensor[1]._tensor[0](2, 3) = 1;
+
+    cubic._tensor[2]._tensor[3](1, 0) = 1;
+    cubic._tensor[3]._tensor[2](0, 1) = 1;
+
+    _cubicCoef = cubic;
+    _cubicCoef = _cubicCoef.modeFourProduct(pfputrans);
+    _cubicCoef = _cubicCoef.modeThreeProduct(pfputrans);
+    _cubicCoef = _cubicCoef.modeTwoProduct(pfputrans);
+    _cubicCoef = _cubicCoef.modeOneProduct(pfputrans);
+
+    _cubicCoef_lambda = cubic_lambda;
+    _cubicCoef_lambda = _cubicCoef_lambda.modeFourProduct(pfputrans);
+    _cubicCoef_lambda = _cubicCoef_lambda.modeThreeProduct(pfputrans);
+    _cubicCoef_lambda = _cubicCoef_lambda.modeTwoProduct(pfputrans);
+    _cubicCoef_lambda = _cubicCoef_lambda.modeOneProduct(pfputrans);
+
     pfputrans.resize(0,0);
 
 }
@@ -216,6 +244,31 @@ VECTOR TRIANGLE::precomputedLinearCoef()
   return linearForce;
 }
 
+VECTOR TRIANGLE::precomputedCubicCoef() {
+  // figure out how to get lamda and mu
+  VECTOR cubicForce(6);
+  VECTOR pos(6);
+  for(int i = 0; i < 3; i++)
+  {
+    pos[2*i] = (*_vertices[i])[0];
+    pos[2*i + 1] = (*_vertices[i])[1];
+  }
+
+  TENSOR3 cubicTensor = _cubicCoef.modeFourProduct(pos);
+  MATRIX cubicMatrix = cubicTensor.modeThreeProduct(pos);
+  cubicForce = cubicMatrix * pos;
+  cubicForce = -1*restArea()*4*_mu*cubicForce;
+
+  cubicTensor = _cubicCoef_lambda.modeFourProduct(pos);
+  cubicMatrix = cubicTensor.modeThreeProduct(pos);
+  cubicForce += ((-1*restArea()*2*_lambda)*(cubicMatrix * pos));
+
+  cubicTensor.clear();
+  cubicMatrix.resize(0,0);
+
+  return cubicForce;
+}
+
 MATRIX TRIANGLE::precomputedQuadCoef()
 {
   MATRIX quadForce(6,6);
@@ -245,14 +298,14 @@ MATRIX TRIANGLE::precomputedQuadCoef()
 VECTOR TRIANGLE::computeForceVector()
 {
   VECTOR forceVector(6);
-  MATRIX2 F = computeF();
-  MATRIX2 pk1 = _material->PK1(F);
-  MATRIX dfdu(4,6);
+  //MATRIX2 F = computeF();
+  //MATRIX2 pk1 = _material->PK1(F);
+  //MATRIX dfdu(4,6);
 
   //multiply pk1 by -1 and area as discussed in OH
-  pk1 = -1*restArea()*pk1;
+  //pk1 = -1*restArea()*pk1;
 
-  forceVector = _pfpu.transpose()*vectorize(pk1) + precomputedLinearCoef();
+  forceVector = precomputedCubicCoef() + precomputedLinearCoef(); // + _pfpu.transpose()*vectorize(pk1) ;
 
   return forceVector;
 }
@@ -260,21 +313,21 @@ VECTOR TRIANGLE::computeForceVector()
 ///////////////////////////////////////////////////////////////////////
 MATRIX TRIANGLE::computeForceJacobian()
 {
-  MATRIX2 F = computeF();
+  //MATRIX2 F = computeF();
   MATRIX jacobian(6,6);
-  MATRIX dfdu(4,6);
+  //MATRIX dfdu(4,6);
 
   //get 4x4 matrix of derivative of pk1. This is matrix B from class
-  MATRIX dpdf = _material->DPDF(F);
+  //MATRIX dpdf = _material->DPDF(F);
 
   //multiply dpdf by -1 and area as discussed in OH
-  dpdf = -1*restArea()*dpdf;
+  //dpdf = -1*restArea()*dpdf;
 
   // d^2 psi/ dx^2 = A transpose * B * A
   jacobian = precomputedQuadCoef() + _linearCoef;
 
   //without precomputed tensors
-  // jacobian = (_pfpu.transpose() * dpdf * _pfpu) + _linearCoef;
+  //jacobian = (_pfpu.transpose() * dpdf * _pfpu) + _linearCoef;
 
   return jacobian;
 }

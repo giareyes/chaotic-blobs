@@ -28,13 +28,13 @@ MATRIX STVK::PK1(const MATRIX2& F)
   //mult = mult - identity;
 
   //first find the derivative of the first term
-  MATRIX2 dFirst = 4*_mu*(F*mult);
+  //MATRIX2 dFirst = 4*_mu*(F*mult);
 
   //next find the derivative of the second term
   //chain rule gets rid of /2 so that we just have lambda * tr(blah) * d(blah)/dF
   MATRIX2 dSecond = _lambda*mult.trace()*2*F;
 
-  return dFirst + dSecond;
+  return dSecond; // + dFirst;
 }
 
 ///////////////////////////////////////////////////////////////////////

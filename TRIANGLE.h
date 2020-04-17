@@ -37,6 +37,8 @@ public:
 
   VECTOR precomputedLinearCoef();
 
+  VECTOR precomputedCubicCoef();
+
   MATRIX precomputedQuadCoef();
 
   // compute rest area of this triangle
@@ -62,6 +64,9 @@ private:
   // i only need one
   TENSOR4 _quadraticCoef;
   TENSOR4 _quadraticCoef_lambda;
+
+  TENSOR4 _cubicCoef;
+  TENSOR4 _cubicCoef_lambda;
 
   // material model
   MATERIAL* _material;
