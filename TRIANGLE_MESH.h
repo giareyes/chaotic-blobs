@@ -45,6 +45,11 @@ public:
   // a weird but fun collision detector
   void wackyCollision();
 
+  // precompute coefficients
+  void createCoefs();
+
+  void flattenVertices();
+
 //----------------------------------------------------------
 
   // advance the constrained nodes for the stretch test
@@ -111,11 +116,19 @@ private:
   VECTOR _rv;
   VECTOR _ra;
 
+  // coefficients for precomputation
+  MATRIX _linearCoef;
+  MATRIX _constCoef;
+
+  TENSOR4 _quadraticCoef;
+  TENSOR4 _cubicCoef;
+
   // the geometry
   std::vector<VEC2>   _vertices;
   std::vector<VEC2>   _restVertices;
   std::vector<TRIANGLE> _triangles;
 
+  VECTOR _flattenedVerts;
   // these vertices are constrained
   std::vector<int> _constrainedVertices;
 
@@ -124,6 +137,7 @@ private:
 
   // back-index from a vertex to its position in _u
   std::map<VEC2*, int> _vertexToIndex;
+  std::map<VEC2*, int> _allVertsToIndex;
 
   // the material
   MATERIAL* _material;

@@ -227,3 +227,26 @@ void TENSOR4::clear()
   for (int x = 0; x < _slab_cols; x++)
     _tensor[x].clear();
 }
+
+TENSOR4& TENSOR4::operator+=(const TENSOR4& m)
+{
+  assert(_rows == m.rows());
+  assert(_cols == m.cols());
+  assert(_slab_rows == m.slab_rows());
+  assert(_slab_cols == m.slab_cols());
+
+  for (int z = 0; z < _slab_cols; z++)
+  {
+      _tensor[z] += m._tensor[z];
+  }
+
+  return *this;
+}
+
+TENSOR4& TENSOR4::operator*=(const Real& scalar)
+{
+  for (int z = 0; z < _slab_cols; z++)
+    _tensor[z] *= scalar;
+
+  return *this;
+}

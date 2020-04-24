@@ -210,6 +210,8 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
 
   // compute the reverse lookup
   computeVertexToIndexTable();
+  flattenVertices();
+  createCoefs();
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -218,13 +220,39 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
 void TRIANGLE_MESH::computeVertexToIndexTable()
 {
   _vertexToIndex.clear();
+  _allVertsToIndex.clear();
   for (unsigned int x = 0; x < _unconstrainedVertices.size(); x++)
   {
     VEC2* vertex = &_vertices[_unconstrainedVertices[x]];
     _vertexToIndex[vertex] = 2 * x;
+    _allVertsToIndex[vertex] = 2 * x;
+  }
+
+  for (unsigned int x = 0; x < _constrainedVertices.size(); x++)
+  {
+    VEC2* vertex = &_vertices[_constrainedVertices[x]];
+    _allVertsToIndex[vertex] = (2*_unconstrainedVertices.size()) + (2 * x);
   }
 }
 
+void TRIANGLE_MESH::flattenVertices()
+{
+  VECTOR v(2*_vertices.size());
+
+  for(int i = 0; i < _unconstrainedVertices.size(); i++)
+  {
+    v[2*i] = _vertices[_unconstrainedVertices[i]][0];
+    v[2*i + 1] = _vertices[_unconstrainedVertices[i]][1];
+  }
+
+  for(int i = 0; i < _constrainedVertices.size(); i++)
+  {
+    v[2*_unconstrainedVertices.size() + 2*i] = _vertices[_constrainedVertices[i]][0];
+    v[2*_unconstrainedVertices.size() + 2*i + 1] = _vertices[_constrainedVertices[i]][1];
+  }
+
+  _flattenedVerts = v;
+};
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void TRIANGLE_MESH::uScatter()
@@ -234,6 +262,8 @@ void TRIANGLE_MESH::uScatter()
     int index = _unconstrainedVertices[x];
     _vertices[index][0] = _restVertices[index][0] + _u[2 * x];
     _vertices[index][1] = _restVertices[index][1] + _u[2 * x + 1];
+    _flattenedVerts[x*2] = _vertices[index][0];
+    _flattenedVerts[x*2 + 1] = _vertices[index][1];
   }
 }
 
@@ -493,7 +523,10 @@ void TRIANGLE_MESH::stepShearTest(const Real shear)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][1] > -.35)
+    {
       _vertices[right][0] += shear;
+      _flattenedVerts[x*2] = _vertices[right][0];
+    }
   }
 }
 
@@ -506,7 +539,10 @@ void TRIANGLE_MESH::stepStretchTest(const Real stretch)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][0] > 0.15)
+    {
       _vertices[right][0] += stretch;
+      _flattenedVerts[x*2] = _vertices[right][0];
+    }
   }
 }
 
@@ -516,10 +552,142 @@ void TRIANGLE_MESH::stretch2(const Real stretch)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][1] > -.35)
+    {
       _vertices[right][1] += stretch;
+      _flattenedVerts[x*2 + 1] = _vertices[right][1];
+    }
   }
 }
 
+
+void TRIANGLE_MESH::createCoefs()
+{
+  MATRIX m(_vertices.size()*2,_vertices.size()*2);
+  MATRIX constTemp(_vertices.size()*2,_vertices.size()*2);
+  TENSOR4 tempQuad(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
+  TENSOR4 temp(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
+  m.setZero();
+  constTemp.setZero();
+
+  int n_of_triangles = _triangles.size();
+
+  for(int x = 0; x < n_of_triangles; x++)
+  {
+    //get our current triangle
+    TRIANGLE current = getTriangle(x);
+
+    //get the linear coef
+    MATRIX linearCoef = current.getLinear();
+    TENSOR4 quadCoef = current.getQuad();
+    TENSOR4 cubicCoef = current.getCubic();
+
+    //add the forces into the right place in the global linear coef
+    for(int i = 0; i < 3; i++)
+    {
+      //get current triangle vertex y
+      VEC2* current_iv = _triangles[x].vertex(i);
+
+      //if the vertex we're on is unconstrained, add it to the global linear coef
+      if(_vertexToIndex.find(current_iv) != _vertexToIndex.end())
+      {
+        //find the global index using the vertexToIndex map
+        int global_index_i = _vertexToIndex[current_iv];
+
+        for(int j = 0; j < 3; j++)
+        {
+          bool stiffness = false;
+          VEC2* current_jv = _triangles[x].vertex(j);
+
+          int global_index_j = _allVertsToIndex[current_jv];
+          m(global_index_i, global_index_j) += linearCoef(2*i, 2*j);
+          m(global_index_i, global_index_j + 1) += linearCoef(2*i, 2*j + 1);
+          m(global_index_i + 1, global_index_j) += linearCoef(2*i + 1, 2*j);
+          m(global_index_i + 1, global_index_j + 1) += linearCoef(2*i + 1, 2*j + 1);
+
+          if(_vertexToIndex.find(current_jv) != _vertexToIndex.end())
+          {
+            stiffness = true;
+
+            constTemp(global_index_i, global_index_j) += linearCoef(2*i, 2*j);
+            constTemp(global_index_i, global_index_j + 1) += linearCoef(2*i, 2*j + 1);
+            constTemp(global_index_i + 1, global_index_j) += linearCoef(2*i + 1, 2*j);
+            constTemp(global_index_i + 1, global_index_j + 1) += linearCoef(2*i + 1, 2*j + 1);
+          }
+
+          for(int k = 0; k < 3; k++)
+          {
+            VEC2* current_kv = _triangles[x].vertex(k);
+
+            int global_index_k = _allVertsToIndex[current_kv];
+
+            for(int l = 0; l < 3; l++)
+            {
+              VEC2* current_lv = _triangles[x].vertex(l);
+
+              int global_index_l = _allVertsToIndex[current_lv];
+              temp._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j) += cubicCoef._tensor[2*l]._tensor[2*k](2*i, 2*j);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j) += cubicCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j);
+
+              temp._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i, global_index_j) += cubicCoef._tensor[2*l]._tensor[2*k + 1](2*i, 2*j);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i, global_index_j) += cubicCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i, 2*j);
+
+              temp._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j + 1) += cubicCoef._tensor[2*l]._tensor[2*k](2*i, 2*j + 1);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j + 1) += cubicCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j + 1);
+              temp._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += cubicCoef._tensor[2*l]._tensor[2*k + 1](2*i, 2*j + 1);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += cubicCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i, 2*j + 1);
+
+              temp._tensor[global_index_l]._tensor[global_index_k](global_index_i + 1, global_index_j) += cubicCoef._tensor[2*l]._tensor[2*k](2*i + 1, 2*j);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i + 1, global_index_j) += cubicCoef._tensor[2*l + 1]._tensor[2*k](2*i + 1, 2*j);
+
+              temp._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += cubicCoef._tensor[2*l]._tensor[2*k + 1](2*i + 1, 2*j);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += cubicCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i + 1, 2*j);
+
+              temp._tensor[global_index_l]._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += cubicCoef._tensor[2*l]._tensor[2*k](2*i + 1, 2*j + 1);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += cubicCoef._tensor[2*l + 1]._tensor[2*k](2*i + 1, 2*j + 1);
+              temp._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += cubicCoef._tensor[2*l]._tensor[2*k + 1](2*i + 1, 2*j + 1);
+              temp._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += cubicCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i + 1, 2*j + 1);
+
+              if(stiffness)
+              {
+                tempQuad._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j) += quadCoef._tensor[2*l]._tensor[2*k](2*i, 2*j);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j) += quadCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j);
+
+                tempQuad._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i, global_index_j) += quadCoef._tensor[2*l]._tensor[2*k + 1](2*i, 2*j);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i, global_index_j) += quadCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i, 2*j);
+
+                tempQuad._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j + 1) += quadCoef._tensor[2*l]._tensor[2*k](2*i, 2*j + 1);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j + 1) += quadCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j + 1);
+                tempQuad._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += quadCoef._tensor[2*l]._tensor[2*k + 1](2*i, 2*j + 1);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += quadCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i, 2*j + 1);
+
+                tempQuad._tensor[global_index_l]._tensor[global_index_k](global_index_i + 1, global_index_j) += quadCoef._tensor[2*l]._tensor[2*k](2*i + 1, 2*j);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i + 1, global_index_j) += quadCoef._tensor[2*l + 1]._tensor[2*k](2*i + 1, 2*j);
+
+                tempQuad._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += quadCoef._tensor[2*l]._tensor[2*k + 1](2*i + 1, 2*j);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += quadCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i + 1, 2*j);
+
+                tempQuad._tensor[global_index_l]._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += quadCoef._tensor[2*l]._tensor[2*k](2*i + 1, 2*j + 1);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += quadCoef._tensor[2*l + 1]._tensor[2*k](2*i + 1, 2*j + 1);
+                tempQuad._tensor[global_index_l]._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += quadCoef._tensor[2*l]._tensor[2*k + 1](2*i + 1, 2*j + 1);
+                tempQuad._tensor[global_index_l + 1]._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += quadCoef._tensor[2*l + 1]._tensor[2*k + 1](2*i + 1, 2*j + 1);
+              }
+
+            }
+          }
+        }
+      }
+    }
+
+    quadCoef.clear();
+    cubicCoef.clear();
+  }
+
+  _linearCoef = m;
+  _cubicCoef = temp;
+  _constCoef = constTemp;
+  _quadraticCoef = tempQuad;
+
+}
 ///////////////////////////////////////////////////////////////////////
 //this will find the global force vector of forces on each unrestrained
 //vertex.
@@ -532,37 +700,16 @@ void TRIANGLE_MESH::computeMaterialForces()
   VECTOR global_vector(_vertices.size()*2);
   global_vector.setZero();
 
-  //loop through triangles, calculate force on each local point
-  //convert local vertices to global vertex
-  //add force computed into global vertex spot of global_vector
-  int n_of_triangles = _triangles.size();
-
-  for(int x = 0; x < n_of_triangles; x++)
-  {
-    //get our current triangle
-    TRIANGLE current = getTriangle(x);
-
-    //find the force vector that's being applied to this triangle
-    VECTOR current_force = current.computeForceVector();
-
-    //add the forces into the right place in the global force vector
-    for(int y = 0; y < 3; y++)
-    {
-      //get current triangle vertex y
-      VEC2* current_v = _triangles[x].vertex(y);
-
-      //if the vertex we're on is unconstrained, add it to the global vector
-      if(_vertexToIndex.find(current_v) != _vertexToIndex.end())
-      {
-        //find the global index using the vertexToIndex map
-        int global_index = _vertexToIndex[current_v];
-        global_vector[global_index] += current_force[2*y];
-        global_vector[global_index + 1] += current_force[2*y + 1];
-      }
-    }
-  }
-
   //store global vector into _f
+  global_vector += (_linearCoef * _flattenedVerts);
+
+  TENSOR3 temp = _cubicCoef.modeFourProduct(_flattenedVerts);
+  MATRIX tempMatrix = temp.modeThreeProduct(_flattenedVerts);
+  global_vector += (tempMatrix*_flattenedVerts);
+
+  tempMatrix.resize(0,0);
+  temp.clear();
+
   _f = global_vector;
 }
 
@@ -734,6 +881,8 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
     displacement[0] = _u[2*unconstrained + 2*x];
     displacement[1] = _u[2*unconstrained + 2*x + 1];
     _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]]+ displacement;
+    _flattenedVerts[2*unconstrained + x*2] = _vertices[_constrainedVertices[x]][0];
+    _flattenedVerts[2*unconstrained + x*2 + 1] = _vertices[_constrainedVertices[x]][1];
     // printf("displacement for constrained vertices is: (%f, %f)\n", displacement[0], displacement[1]);
   }
 
@@ -805,42 +954,9 @@ void TRIANGLE_MESH::computeStiffnessMatrix(MATRIX& K)
 {
   //can assume K is the correct size, 2V x 2V
 
-  int n_of_triangles = _triangles.size();
+  TENSOR3 temp = _quadraticCoef.modeFourProduct(_flattenedVerts);
+  K = temp.modeThreeProduct(_flattenedVerts);
+  K += _constCoef;
 
-  //go through each triangle and map vertices to their global vertices. if
-  //unrestrained, then add to the poisition in the global K.
-  for(int x = 0; x < n_of_triangles; x++)
-  {
-    TRIANGLE current = getTriangle(x);
-
-    //find the force vector that's being applied to this triangle
-    MATRIX current_force = current.computeForceJacobian();
-
-    for(int i = 0; i < 3; i++)
-    {
-      //get current triangle vertex y
-      VEC2* current_iv = _triangles[x].vertex(i);
-
-      //if the vertex we're on is unconstrained, add it to the global K
-      if(_vertexToIndex.find(current_iv) != _vertexToIndex.end())
-      {
-        //find the global index using the vertexToIndex map
-        int global_index_i = _vertexToIndex[current_iv];
-
-        for(int j = 0; j < 3; j++)
-        {
-          VEC2* current_jv = _triangles[x].vertex(j);
-
-          if(_vertexToIndex.find(current_jv) != _vertexToIndex.end())
-          {
-            int global_index_j = _vertexToIndex[current_jv];
-            K(global_index_i, global_index_j) += current_force(2*i, 2*j);
-            K(global_index_i, global_index_j + 1) += current_force(2*i, 2*j + 1);
-            K(global_index_i + 1, global_index_j) += current_force(2*i + 1, 2*j);
-            K(global_index_i + 1, global_index_j + 1) += current_force(2*i + 1, 2*j + 1);
-          }
-        }
-      }
-    }
-  }
+  temp.clear();
 }

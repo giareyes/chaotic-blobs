@@ -230,6 +230,15 @@ TENSOR4 TENSOR4::modeOneProduct(const MATRIX& x)
   return result_tensor;
 }
 
+TENSOR4& TENSOR4::operator*=(const Real& scalar)
+{
+  for (int z = 0; z < _slab_cols; z++)
+    _tensor[z] *= scalar;
+
+  return *this;
+}
+
+
 void printMatrix(MATRIX matrix)
 {
   int rows = matrix.rows();

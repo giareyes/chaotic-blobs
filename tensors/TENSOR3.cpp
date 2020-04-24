@@ -105,3 +105,11 @@ TENSOR3& TENSOR3::operator+=(const TENSOR3& m)
 
   return *this;
 }
+
+TENSOR3& TENSOR3::operator*=(const Real& scalar)
+{
+  for (int z = 0; z < _slabs; z++)
+    _tensor[z] *= scalar;
+
+  return *this;
+}

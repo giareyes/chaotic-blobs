@@ -31,7 +31,11 @@ public:
   VEC2* vertex(int i) { return _vertices[i]; };
   const VEC2& vertex(int i) const { return *_vertices[i]; };
 
-  MATRIX computeForceJacobian();
+  MATRIX getLinear() { return _linearCoef; };
+  TENSOR4 getCubic() { return _cubicCoef; };
+  TENSOR4 getQuad() { return _quadraticCoef; };
+
+  vector<MATRIX> computeForceJacobian();
 
   VECTOR computeForceVector();
 
@@ -60,13 +64,8 @@ private:
   MATRIX _pfpu;
   MATRIX6 _linearCoef;
 
-  // this is only a vector bc idk how to make the compiler not angry
-  // i only need one
   TENSOR4 _quadraticCoef;
-  TENSOR4 _quadraticCoef_lambda;
-
   TENSOR4 _cubicCoef;
-  TENSOR4 _cubicCoef_lambda;
 
   // material model
   MATERIAL* _material;

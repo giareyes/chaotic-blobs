@@ -23,6 +23,9 @@ public:
   TENSOR4 modeTwoProduct(const MATRIX& x);
   TENSOR4 modeOneProduct(const MATRIX& x);
 
+  TENSOR4& operator+=(const TENSOR4& m);
+  TENSOR4& operator*=(const Real& scalar);
+
   vector<TENSOR3> _tensor;
 protected:
   int _rows;
