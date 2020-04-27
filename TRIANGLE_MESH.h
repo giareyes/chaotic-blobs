@@ -48,8 +48,6 @@ public:
   // precompute coefficients
   void createCoefs();
 
-  // void flattenVertices();
-
 //----------------------------------------------------------
 
   // advance the constrained nodes for the stretch test
@@ -87,15 +85,12 @@ private:
 
   void computeStiffnessMatrix(MATRIX& K);
 
-  // void computeDampingMatrix(MATRIX& K, MATRIX& M);
-
   // how many degrees of freedom are there?
   int _DOFs;
 
   // the displacement vector
   VECTOR _u;
   VECTOR _q;
-  // VECTOR reduced_verts; // list of all the vertices that are used in the reduced
 
   // change of basis matrix
   MATRIX _U;
@@ -106,7 +101,6 @@ private:
 
   // mass matrix
   MATRIX _mass;
-  // MATRIX _damp;
 
   // velocity and acceleration
   VECTOR _velocity;
@@ -130,7 +124,6 @@ private:
   std::vector<VEC2>   _restVertices;
   std::vector<TRIANGLE> _triangles;
 
-  // VECTOR _flattenedVerts;
   // these vertices are constrained
   std::vector<int> _constrainedVertices;
 
