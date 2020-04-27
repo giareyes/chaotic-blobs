@@ -193,7 +193,6 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
   setMassMatrix();
 
   VECTOR zeros(_vertices.size()*2);
-  // VECTOR zeros(_DOFs);
   VECTOR z2(_U.cols());
 
   z2.setZero();
@@ -210,7 +209,6 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
 
   // compute the reverse lookup
   computeVertexToIndexTable();
-  flattenVertices();
   createCoefs();
 }
 
@@ -235,24 +233,6 @@ void TRIANGLE_MESH::computeVertexToIndexTable()
   }
 }
 
-void TRIANGLE_MESH::flattenVertices()
-{
-  VECTOR v(2*_vertices.size());
-
-  for(int i = 0; i < _unconstrainedVertices.size(); i++)
-  {
-    v[2*i] = _vertices[_unconstrainedVertices[i]][0];
-    v[2*i + 1] = _vertices[_unconstrainedVertices[i]][1];
-  }
-
-  for(int i = 0; i < _constrainedVertices.size(); i++)
-  {
-    v[2*_unconstrainedVertices.size() + 2*i] = _vertices[_constrainedVertices[i]][0];
-    v[2*_unconstrainedVertices.size() + 2*i + 1] = _vertices[_constrainedVertices[i]][1];
-  }
-
-  _flattenedVerts = v;
-};
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 void TRIANGLE_MESH::uScatter()
@@ -262,8 +242,6 @@ void TRIANGLE_MESH::uScatter()
     int index = _unconstrainedVertices[x];
     _vertices[index][0] = _restVertices[index][0] + _u[2 * x];
     _vertices[index][1] = _restVertices[index][1] + _u[2 * x + 1];
-    _flattenedVerts[x*2] = _vertices[index][0];
-    _flattenedVerts[x*2 + 1] = _vertices[index][1];
   }
 }
 
@@ -287,16 +265,10 @@ void TRIANGLE_MESH::setMassMatrix()
   //for now we will make every vertex has mass 1
   M.setIdentity();
   M = M*15;
+  M = M*_U;
+  M = _U.transpose() * M;
   _mass = M;
 }
-
-// void TRIANGLE_MESH::computeDampingMatrix(MATRIX& K, MATRIX& M)
-// {
-//   float alpha = 0.01; // constant for damping
-//   float beta = 0.02;  // constant for damping
-//
-//   _damp = alpha*M - beta*K;
-// }
 
 void TRIANGLE_MESH::basisNoTranslation()
 {
@@ -523,10 +495,7 @@ void TRIANGLE_MESH::stepShearTest(const Real shear)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][1] > -.35)
-    {
       _vertices[right][0] += shear;
-      _flattenedVerts[x*2] = _vertices[right][0];
-    }
   }
 }
 
@@ -539,10 +508,7 @@ void TRIANGLE_MESH::stepStretchTest(const Real stretch)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][0] > 0.15)
-    {
       _vertices[right][0] += stretch;
-      _flattenedVerts[x*2] = _vertices[right][0];
-    }
   }
 }
 
@@ -552,10 +518,7 @@ void TRIANGLE_MESH::stretch2(const Real stretch)
   {
     int right = _constrainedVertices[x];
     if (_restVertices[right][1] > -.35)
-    {
       _vertices[right][1] += stretch;
-      _flattenedVerts[x*2 + 1] = _vertices[right][1];
-    }
   }
 }
 
@@ -565,6 +528,7 @@ void TRIANGLE_MESH::createCoefs()
   MATRIX m(_vertices.size()*2,_vertices.size()*2);
   MATRIX constTemp(_vertices.size()*2,_vertices.size()*2);
   TENSOR3 cubq(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2);
+  TENSOR3 quadl(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2);
   TENSOR4 tempQuad(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
   TENSOR4 temp(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
   m.setZero();
@@ -581,6 +545,7 @@ void TRIANGLE_MESH::createCoefs()
     MATRIX constCoef = current.getConst();
     MATRIX linearCoef = current.getLinear();
     TENSOR3 cubquad = current.getQuadCubic();
+    TENSOR3 quadlin = current.getLinearQuad();
     TENSOR4 quadCoef = current.getQuad();
     TENSOR4 cubicCoef = current.getCubic();
 
@@ -601,6 +566,7 @@ void TRIANGLE_MESH::createCoefs()
           bool stiffness = false;
           VEC2* current_jv = _triangles[x].vertex(j);
 
+          // set values in linear coefficient of cubic polynomial
           int global_index_j = _allVertsToIndex[current_jv];
           m(global_index_i, global_index_j) += linearCoef(2*i, 2*j);
           m(global_index_i, global_index_j + 1) += linearCoef(2*i, 2*j + 1);
@@ -611,6 +577,7 @@ void TRIANGLE_MESH::createCoefs()
           {
             stiffness = true;
 
+            // set values of constant coefficient in quadratic polynomial
             constTemp(global_index_i, global_index_j) += constCoef(2*i, 2*j);
             constTemp(global_index_i, global_index_j + 1) += constCoef(2*i, 2*j + 1);
             constTemp(global_index_i + 1, global_index_j) += constCoef(2*i + 1, 2*j);
@@ -623,6 +590,7 @@ void TRIANGLE_MESH::createCoefs()
 
             int global_index_k = _allVertsToIndex[current_kv];
 
+            // set values in quadratic coefficient in cubic polynomial
             cubq._tensor[global_index_k](global_index_i, global_index_j) += cubquad._tensor[2*k](2*i, 2*j);
             cubq._tensor[global_index_k](global_index_i, global_index_j + 1) += cubquad._tensor[2*k](2*i, 2*j + 1);
 
@@ -635,11 +603,29 @@ void TRIANGLE_MESH::createCoefs()
             cubq._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += cubquad._tensor[2*k + 1](2*i + 1, 2*j);
             cubq._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += cubquad._tensor[2*k + 1](2*i + 1, 2*j + 1);
 
+            if(stiffness)
+            {
+              // set values in linear coefficient in quadratic polynomial
+              quadl._tensor[global_index_k](global_index_i, global_index_j) += quadlin._tensor[2*k](2*i, 2*j);
+              quadl._tensor[global_index_k](global_index_i, global_index_j + 1) += quadlin._tensor[2*k](2*i, 2*j + 1);
+
+              quadl._tensor[global_index_k](global_index_i + 1, global_index_j) += quadlin._tensor[2*k](2*i + 1, 2*j);
+              quadl._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += quadlin._tensor[2*k](2*i + 1, 2*j + 1);
+
+              quadl._tensor[global_index_k + 1](global_index_i, global_index_j) += quadlin._tensor[2*k + 1](2*i, 2*j);
+              quadl._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += quadlin._tensor[2*k + 1](2*i, 2*j + 1);
+
+              quadl._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += quadlin._tensor[2*k + 1](2*i + 1, 2*j);
+              quadl._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += quadlin._tensor[2*k + 1](2*i + 1, 2*j + 1);
+            }
+
             for(int l = 0; l < 3; l++)
             {
               VEC2* current_lv = _triangles[x].vertex(l);
 
               int global_index_l = _allVertsToIndex[current_lv];
+
+              // set coefficients in cubic term of cubic polynomial
               temp._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j) += cubicCoef._tensor[2*l]._tensor[2*k](2*i, 2*j);
               temp._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j) += cubicCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j);
 
@@ -664,6 +650,7 @@ void TRIANGLE_MESH::createCoefs()
 
               if(stiffness)
               {
+                // set coefficients in quadratic term of quadratic polynomial
                 tempQuad._tensor[global_index_l]._tensor[global_index_k](global_index_i, global_index_j) += quadCoef._tensor[2*l]._tensor[2*k](2*i, 2*j);
                 tempQuad._tensor[global_index_l + 1]._tensor[global_index_k](global_index_i, global_index_j) += quadCoef._tensor[2*l + 1]._tensor[2*k](2*i, 2*j);
 
@@ -693,7 +680,10 @@ void TRIANGLE_MESH::createCoefs()
       }
     }
 
+    constCoef.resize(0,0);
+    linearCoef.resize(0,0);
     quadCoef.clear();
+    quadlin.clear();
     cubicCoef.clear();
     cubquad.clear();
   }
@@ -701,23 +691,41 @@ void TRIANGLE_MESH::createCoefs()
   MATRIX transpose = _U.transpose();
 
   // set reduced coefficients for the cubic polynomial
+
+  // linear term
   _linearCoef = transpose*(m*_U);
   m.resize(0,0);
 
+  // cubic coefficient
   _cubicCoef = temp.modeFourProduct(transpose);
   temp.clear();
   _cubicCoef = _cubicCoef.modeThreeProduct(transpose);
   _cubicCoef = _cubicCoef.modeTwoProduct(transpose);
   _cubicCoef = _cubicCoef.modeOneProduct(transpose);
 
+  // quadratic coefficient of cubic polynomial
   _cubicquad = cubq.modeThreeProduct(transpose);
   cubq.clear();
   _cubicquad = _cubicquad.modeTwoProduct(transpose);
   _cubicquad = _cubicquad.modeOneProduct(transpose);
 
-  // set unreduced coefficients for quadratic polynomial
-  _constCoef = constTemp;
-  _quadraticCoef = tempQuad;
+  // set reduced coefficients for quadratic polynomial
+
+  // constant term
+  _constCoef = transpose*(constTemp*_U);
+
+  // linear term
+  _quadlinear = quadl.modeThreeProduct(transpose);
+  quadl.clear();
+  _quadlinear = _quadlinear.modeTwoProduct(transpose);
+  _quadlinear = _quadlinear.modeOneProduct(transpose);
+
+  // quadratic term
+  _quadraticCoef = tempQuad.modeFourProduct(transpose);
+  tempQuad.clear();
+  _quadraticCoef = _quadraticCoef.modeThreeProduct(transpose);
+  _quadraticCoef = _quadraticCoef.modeTwoProduct(transpose);
+  _quadraticCoef = _quadraticCoef.modeOneProduct(transpose);
 
   // free memory
   transpose.resize(0,0);
@@ -734,7 +742,7 @@ void TRIANGLE_MESH::computeMaterialForces()
 {
   //the global vector will be v= [f_0, f_1 ...] where each f_i = [x,y] (column vectors)
   //and forces are only for unconstrained vertices. This means the size of this vector is
-  // size(unconstrained vertices)*2 since each has an x,y component
+
   VECTOR global_vector(_q.size());
   global_vector.setZero();
 
@@ -850,8 +858,8 @@ void TRIANGLE_MESH::checkCollision()
 void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 {
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
-  MATRIX K(_vertices.size()*2,_vertices.size()*2);
-  MATRIX D(_vertices.size()*2,_vertices.size()*2);
+  MATRIX K(_q.size(),_q.size() );
+  MATRIX D(_q.size(),_q.size() );
   MATRIX inverse;
   float alpha = 0.01; // constant for damping
   float beta = 0.02;  // constant for damping
@@ -862,31 +870,18 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   //step 1: compute K
   K.setZero();
   computeStiffnessMatrix(K);
-  MATRIX K_reduced = _U.transpose() * K * _U;
 
   // step 2: compute D
   D = alpha*_mass - beta*K;
-  MATRIX D_reduced = _U.transpose() * D * _U;
 
-  // free space
-  K.resize(0,0);
-  D.resize(0,0);
 
-  // step 3: compute new M
-  MATRIX M_reduced = _U.transpose() * _mass * _U;
-
-  // printMatrix(M_reduced);
-
-  // step 4: calculate f_external
+  // step 3: calculate f_external
   VECTOR reducedF = _U.transpose() * _fExternal;
 
-  // step 5: compute R(q+1)
+  // step 4: compute R(q+1)
   computeMaterialForces();
-  // VECTOR reducedR = _U.transpose() * _f;
-  // printf("internal force is:\n");
-  // printVector(_f);
 
-  // step 6: calculate a1 - a6 with beta = 0.25 and gamma = 0.5
+  // step 5: calculate a1 - a6 with beta  0.25 and gamma = 0.5
   float betat = 0.25;
   float gamma = 0.5;
   float a1 = 1.0 / (betat* pow(dt, 2));
@@ -896,9 +891,9 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   float a5 = 1.0 - (gamma/betat);
   float a6 = (1.0 - (gamma/(2*betat)))*dt;
 
-  // step 7: solve the equations
-  VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv - _f - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
-  MATRIX leftMatrix = a1*M_reduced + a4*D_reduced - K_reduced;
+  // step 6: solve the equations
+  VECTOR rightSolve = -1*((-1*a3*_mass + a6*D)*_ra + (-1*a2*_mass + a5*D)*_rv - _f - reducedF);
+  MATRIX leftMatrix = a1*_mass + a4*D - K;
   inverse = leftMatrix.inverse().eval();
 
   VECTOR dq = inverse*rightSolve;
@@ -907,7 +902,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   leftMatrix.resize(0,0);
   inverse.resize(0,0);
 
-  // step 6: update q and u
+  // step 7: update q and u
   _q += dq;
   qTou();
 
@@ -921,9 +916,6 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
     displacement[0] = _u[2*unconstrained + 2*x];
     displacement[1] = _u[2*unconstrained + 2*x + 1];
     _vertices[_constrainedVertices[x]] = _restVertices[_constrainedVertices[x]]+ displacement;
-    _flattenedVerts[2*unconstrained + x*2] = _vertices[_constrainedVertices[x]][0];
-    _flattenedVerts[2*unconstrained + x*2 + 1] = _vertices[_constrainedVertices[x]][1];
-    // printf("displacement for constrained vertices is: (%f, %f)\n", displacement[0], displacement[1]);
   }
 
   // step 9: calculate velocity and accleration
@@ -941,7 +933,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 bool TRIANGLE_MESH::stepQuasistatic()
 {
   //make stiffness Matrix K. size is 2*unrestrained vertices x  2*unrestrained vertices
-  MATRIX K(_vertices.size()*2,_vertices.size()*2);
+  MATRIX K(_q.size(),_q.size());
 
   //step 1: compute K
   K.setZero();
@@ -950,19 +942,14 @@ bool TRIANGLE_MESH::stepQuasistatic()
   //step 2: compute internal material forces, R(uq)
   computeMaterialForces();
 
-  // step 3: convert R(Uq) to R'
-  // VECTOR reducedR = _U.transpose() * _f;
-
-  // //step 4: external forces transform
+  // //step 3: external forces transform
   VECTOR reducedF = _U.transpose() * _fExternal;
 
-  // step 5: form the residual (r = F + E)
+  // step 4: form the residual (r = F + E)
   VECTOR r2 = -1*(_f + reducedF);
 
-  MATRIX k_reduced = _U.transpose() * (K * _U);
-
-  //step 6: compute x = K .inverse().eval()  * r
-  MATRIX inverse2 = k_reduced.inverse().eval();
+  //step 5: compute x = K .inverse().eval()  * r
+  MATRIX inverse2 = K.inverse().eval();
   VECTOR x2 = inverse2*r2;
 
   //step 6: add solution x to displamcement vector _u
@@ -988,10 +975,17 @@ bool TRIANGLE_MESH::stepQuasistatic()
 void TRIANGLE_MESH::computeStiffnessMatrix(MATRIX& K)
 {
   //can assume K is the correct size, 2V x 2V
-  // VECTOR v =  _flattenedVerts - _u;
-  TENSOR3 temp = _quadraticCoef.modeFourProduct(_flattenedVerts);
-  K = temp.modeThreeProduct(_flattenedVerts);
+
+  // compute quadratic term and add to K
+  TENSOR3 temp = _quadraticCoef.modeFourProduct(_q);
+  K = temp.modeThreeProduct(_q);
+
+  // compute linear term and add to K
+  K += _quadlinear.modeThreeProduct(_q);
+
+  // add constant term to K
   K += _constCoef;
 
+  // free space
   temp.clear();
 }

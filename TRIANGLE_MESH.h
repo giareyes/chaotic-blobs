@@ -48,7 +48,7 @@ public:
   // precompute coefficients
   void createCoefs();
 
-  void flattenVertices();
+  // void flattenVertices();
 
 //----------------------------------------------------------
 
@@ -95,7 +95,7 @@ private:
   // the displacement vector
   VECTOR _u;
   VECTOR _q;
-  VECTOR reduced_verts; // list of all the vertices that are used in the reduced
+  // VECTOR reduced_verts; // list of all the vertices that are used in the reduced
 
   // change of basis matrix
   MATRIX _U;
@@ -121,6 +121,7 @@ private:
   MATRIX _constCoef;
 
   TENSOR4 _quadraticCoef;
+  TENSOR3 _quadlinear;
   TENSOR3 _cubicquad;
   TENSOR4 _cubicCoef;
 
@@ -129,7 +130,7 @@ private:
   std::vector<VEC2>   _restVertices;
   std::vector<TRIANGLE> _triangles;
 
-  VECTOR _flattenedVerts;
+  // VECTOR _flattenedVerts;
   // these vertices are constrained
   std::vector<int> _constrainedVertices;
 

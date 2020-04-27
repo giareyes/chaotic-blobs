@@ -33,6 +33,7 @@ public:
 
   MATRIX getConst() { return _constCoef; };
   MATRIX getLinear() { return _linearCoef; };
+  TENSOR3 getLinearQuad() { return _quad2; };
   TENSOR3 getQuadCubic() { return _cubic2; };
   TENSOR4 getCubic() { return _cubicCoef; };
   TENSOR4 getQuad() { return _quadraticCoef; };
@@ -69,6 +70,7 @@ private:
 
   TENSOR4 _quadraticCoef;
   TENSOR3 _cubic2;
+  TENSOR3 _quad2;
   TENSOR4 _cubicCoef;
 
   // material model

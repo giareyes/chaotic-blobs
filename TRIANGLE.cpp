@@ -203,6 +203,13 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
 
     tempCubic.clear();
 
+    _quad2 = _quadraticCoef.modeFourProduct(pos); // C x_4 x;
+
+    _constCoef += _quad2.modeThreeProduct(pos); // C x_4 x x_3 x;
+
+    _quad2 += _quadraticCoef.modeThreeProduct(pos); // C x_3 x;
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////
