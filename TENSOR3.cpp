@@ -99,7 +99,7 @@ TENSOR3 TENSOR3::modeThreeProduct(const MATRIX& x)
   TENSOR3 result_tensor(result);
 
   // free result ?
-  for (int i = 0; i < _rows; i++)
+  for (int i = 0; i < x.rows(); i++)
     result[i].resize(0,0);
 
   return result_tensor;

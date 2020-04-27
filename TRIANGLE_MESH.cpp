@@ -203,7 +203,7 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
   _q            = z2;
   _ra           = z2;
   _rv           = z2;
-  _f            = zeros;
+  _f            = z2;
   _fExternal    = zeros;
   _acceleration = zeros;
   _velocity     = zeros;
@@ -698,25 +698,32 @@ void TRIANGLE_MESH::createCoefs()
     cubquad.clear();
   }
 
-  // MATRIX transpose = _U.transpose();
+  MATRIX transpose = _U.transpose();
 
-  // _linearCoef = transpose*(m*_U);
+  // set reduced coefficients for the cubic polynomial
+  _linearCoef = transpose*(m*_U);
+  m.resize(0,0);
 
-  // _cubicCoef = temp.modeFourProduct(transpose);
-  // _cubicCoef = _cubicCoef.modeThreeProduct(transpose);
-  // _cubicCoef = _cubicCoef.modeTwoProduct(transpose);
-  // _cubicCoef = _cubicCoef.modeOneProduct(transpose);
+  _cubicCoef = temp.modeFourProduct(transpose);
+  temp.clear();
+  _cubicCoef = _cubicCoef.modeThreeProduct(transpose);
+  _cubicCoef = _cubicCoef.modeTwoProduct(transpose);
+  _cubicCoef = _cubicCoef.modeOneProduct(transpose);
 
-  // _cubicquad = cubq.modeThreeProduct(transpose);
-  // _cubicquad = _cubicquad.modeTwoProduct(transpose);
-  // _cubicquad = _cubicquad.modeOneProduct(transpose);
-  _linearCoef = m;
-  _cubicCoef = temp;
-  _cubicquad = cubq;
+  _cubicquad = cubq.modeThreeProduct(transpose);
+  cubq.clear();
+  _cubicquad = _cubicquad.modeTwoProduct(transpose);
+  _cubicquad = _cubicquad.modeOneProduct(transpose);
+
+  // set unreduced coefficients for quadratic polynomial
   _constCoef = constTemp;
   _quadraticCoef = tempQuad;
 
-  // transpose.resize(0,0);
+  // free memory
+  transpose.resize(0,0);
+  temp.clear();
+  cubq.clear();
+  m.resize(0,0);
 
 }
 ///////////////////////////////////////////////////////////////////////
@@ -728,36 +735,30 @@ void TRIANGLE_MESH::computeMaterialForces()
   //the global vector will be v= [f_0, f_1 ...] where each f_i = [x,y] (column vectors)
   //and forces are only for unconstrained vertices. This means the size of this vector is
   // size(unconstrained vertices)*2 since each has an x,y component
-  VECTOR global_vector(_vertices.size()*2);
+  VECTOR global_vector(_q.size());
   global_vector.setZero();
 
-  VECTOR v =  _flattenedVerts - _u;
+  //add linear term to global vector
+  global_vector += (_linearCoef * _q);
 
-  //store global vector into _f
-  global_vector += (_linearCoef * _u);
-  // printf("----------------------------------------------------------\n");
-  // printf("global vector after linear term is: \n");
-  // printVector(global_vector);
-  // printf("\n");
+  // compute the cubic term
+  TENSOR3 temp = _cubicCoef.modeFourProduct(_q);
+  MATRIX tempMatrix = temp.modeThreeProduct(_q);
 
-  TENSOR3 temp = _cubicCoef.modeFourProduct(_u);
-  MATRIX tempMatrix = temp.modeThreeProduct(_u);
-  // VECTOR tempVec = tempMatrix*v;
-  // printf("global vector for cubic is: \n");
-  // printVector(tempVec);
-  // printf("\n");
-  global_vector += (tempMatrix*_u);
+  //add the cubic term to the global vector
+  global_vector += (tempMatrix*_q);
 
-  tempMatrix = _cubicquad.modeThreeProduct(_u);
-  global_vector += (tempMatrix * _u);
+  //compute the quadratic term, add to global vector
+  tempMatrix = _cubicquad.modeThreeProduct(_q);
+  global_vector += (tempMatrix * _q);
 
+  // clear the memory of temporary things
   tempMatrix.resize(0,0);
   temp.clear();
 
+  //store global vector into _f
   _f = global_vector;
-  // printf("global vector is: \n");
-  // printVector(_f);
-  // printf("\n\n\n");
+
 }
 
 void TRIANGLE_MESH::wackyCollision()
@@ -881,8 +882,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
 
   // step 5: compute R(q+1)
   computeMaterialForces();
-  VECTOR reducedR = _U.transpose() * _f;
-  // VECTOR reducedR = _f;
+  // VECTOR reducedR = _U.transpose() * _f;
   // printf("internal force is:\n");
   // printVector(_f);
 
@@ -897,16 +897,11 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   float a6 = (1.0 - (gamma/(2*betat)))*dt;
 
   // step 7: solve the equations
-  VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv - reducedR - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
+  VECTOR rightSolve = -1*((-1*a3*M_reduced + a6*D_reduced)*_ra + (-1*a2*M_reduced + a5*D_reduced)*_rv - _f - reducedF); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
   MATRIX leftMatrix = a1*M_reduced + a4*D_reduced - K_reduced;
   inverse = leftMatrix.inverse().eval();
 
-  // VECTOR rightSolve = -1*((-1*a3*_mass + a6*D)*_acceleration + (-1*a2*_mass + a5*D)*_velocity - _f - _fExternal); // reducedF - _U.transpose()*_acceleration); // + f_i2 - reducedF ;
-  // MATRIX leftMatrix = a1*_mass + a4*D + K;
-  // inverse = leftMatrix.inverse().eval();
-
   VECTOR dq = inverse*rightSolve;
-  // VECTOR du = inverse*rightSolve;
 
   // free space
   leftMatrix.resize(0,0);
@@ -915,9 +910,6 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   // step 6: update q and u
   _q += dq;
   qTou();
-
-  // unreduced - for debugging
-  // _u += du;
 
   // step 8: update all node positions w new displacement vector
   int unconstrained = _unconstrainedVertices.size();
@@ -940,11 +932,6 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   _rv = newVel;
   _velocity = _U*_rv;
 
-  // step 9 - no reduction: for debugging
-  // VECTOR newVel = a4*du + a5*_velocity + a6*_acceleration;
-  // _acceleration = a1*du - a2*_velocity - a3*_acceleration;
-  // _velocity = newVel;
-
   _fExternal.setZero();
   _f.setZero();
 
@@ -964,13 +951,13 @@ bool TRIANGLE_MESH::stepQuasistatic()
   computeMaterialForces();
 
   // step 3: convert R(Uq) to R'
-  VECTOR reducedR = _U.transpose() * _f;
+  // VECTOR reducedR = _U.transpose() * _f;
 
   // //step 4: external forces transform
   VECTOR reducedF = _U.transpose() * _fExternal;
 
   // step 5: form the residual (r = F + E)
-  VECTOR r2 = -1*(reducedR + reducedF);
+  VECTOR r2 = -1*(_f + reducedF);
 
   MATRIX k_reduced = _U.transpose() * (K * _U);
 

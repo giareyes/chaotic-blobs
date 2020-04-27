@@ -100,7 +100,7 @@ TENSOR4 TENSOR4::modeFourProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  for (int i = 0; i < _rows; i++)
+  for (int i = 0; i < x.rows(); i++)
     result[i].clear();
 
   return result_tensor;
@@ -140,7 +140,7 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  for (int i = 0; i < _rows; i++)
+  for (int i = 0; i < _slab_cols; i++)
     result[i].clear();
 
   return result_tensor;
@@ -195,7 +195,7 @@ TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  for (int i = 0; i < _rows; i++)
+  for (int i = 0; i < _slab_cols; i++)
     result[i].clear();
 
   return result_tensor;
@@ -252,7 +252,7 @@ TENSOR4 TENSOR4::modeOneProduct(const MATRIX& x)
   TENSOR4 result_tensor(result);
 
   // free result ?
-  for (int i = 0; i < _rows; i++)
+  for (int i = 0; i < _slab_cols; i++)
     result[i].clear();
 
   return result_tensor;
