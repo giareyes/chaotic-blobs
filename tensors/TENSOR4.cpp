@@ -139,6 +139,23 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
   return result_tensor;
 }
 
+TENSOR3 TENSOR4::modeThreeProduct(const VECTOR& x)
+{
+  assert(_slab_rows == x.size());
+  assert(_slab_rows > 0);
+  TENSOR3 result(_rows, _cols, _slab_cols);
+
+  for(int i = 0; i < _slab_cols; i++)
+  {
+    for(int j = 0; j < _slab_rows; j++)
+    {
+      result._tensor[i] = result._tensor[i] + x[j]*_tensor[i]._tensor[j];
+    }
+  }
+
+  return result;
+}
+
 TENSOR4& TENSOR4::operator+=(const TENSOR4& m)
 {
   assert(_rows == m.rows());
@@ -152,6 +169,24 @@ TENSOR4& TENSOR4::operator+=(const TENSOR4& m)
   }
 
   return *this;
+}
+TENSOR3 TENSOR4::modeTwoProduct(const VECTOR& x) {
+  assert(_cols == x.size());
+  assert(_cols > 0);
+  TENSOR3 result(_rows, _slab_rows, _slab_cols);
+
+  for(int i = 0; i < _cols; i++)
+  {
+    for(int j = 0; j < _slab_rows; j++)
+    {
+      for(int k = 0; k < _slab_cols; k++)
+      {
+        result._tensor[k].col(j) = result._tensor[k].col(j) + x[i]*_tensor[k]._tensor[j].col(i);
+      }
+    }
+  }
+
+  return result;
 }
 
 TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
@@ -254,6 +289,17 @@ void printMatrix(MATRIX matrix)
   }
 }
 
+void printVector(VECTOR vec)
+{
+  int size = vec.size();
+  printf("( ");
+  for(int i =0; i < size; i++)
+  {
+    printf("%f ", vec[i]);
+  }
+  printf(")\n");
+}
+
 int main(int argc, char** argv)
 {
   vector<TENSOR3> vec_tens;
@@ -283,7 +329,7 @@ int main(int argc, char** argv)
       {
         for(int l = 0; l < 4; l++)
         {
-          m(k,l) = rand() % 5;
+          m(k,l) = rand() % 2;
         }
       }
       matrix_vector.push_back(m);
@@ -297,35 +343,45 @@ int main(int argc, char** argv)
     int rand_x = rand() % 6;
     int rand_y = rand() % 4;
 
-    x(rand_x, rand_y) = rand() % 5;
+    x(rand_x, rand_y) = rand() % 2;
   }
 
   TENSOR4 fourTensor(vec_tens);
+  VECTOR v2 = vec.cwiseProduct(vec);
 
   // result1 = C * df/dx * df/dx * x * x
   TENSOR4 fourth_res = fourTensor.modeFourProduct(x);
   fourth_res = fourth_res.modeThreeProduct(x);
   fourth_res = fourth_res.modeTwoProduct(x);
   fourth_res = fourth_res.modeOneProduct(x);
+  // TENSOR3 t3_1 = fourth_res.modeFourProduct(vec);
   TENSOR3 t3_1 = fourth_res.modeFourProduct(vec);
-  MATRIX result1 = t3_1.modeThreeProduct(vec);
+  // MATRIX result1 = t3_1.modeThreeProduct(vec);
+  // result1 = result1 * v2;
 
   // result1 = x * result1;
   // result1 = result1 * x.transpose();
 
   // result2 = C * [df/dx T  * x] * [df/dx T  * x]
-  VECTOR result = x.transpose() * vec;
-  TENSOR3 t3_2 = fourTensor.modeFourProduct(result);
-  MATRIX result2 = t3_2.modeThreeProduct(result);
+  // VECTOR result = x.transpose() * vec;
+  // TENSOR3 t3_2 = fourTensor.modeFourProduct(result);
+  // MATRIX result2 = t3_2.modeThreeProduct(result);
 
-  result2 = x * result2;
-  result2 = result2 * x.transpose();
+  // result2 = x * result2;
+  // result2 = result2 * x.transpose();
+  MATRIX trans = x.transpose();
+  TENSOR3 t3_2 = t3_1.modeTwoProduct(trans);
+  // MATRIX result2 = t3_2.modeThreeProduct(vec);
+  // result2 = result2 * vec;
+
+  printMatrix(trans);
 
   printf("\n\n\n------------------------- result 1 ----------------------------\n\n\n");
-  // fourth_res.toString();
-  printMatrix(result1);
+  t3_1.toString();
+  // printMatrix(result1);
   printf("\n\n\n------------------------- result 2 ----------------------------\n\n\n");
-  printMatrix(result2);
+  // printMatrix(result2);
+  t3_2.toString();
 
   return 1;
 }

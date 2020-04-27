@@ -31,7 +31,9 @@ public:
   VEC2* vertex(int i) { return _vertices[i]; };
   const VEC2& vertex(int i) const { return *_vertices[i]; };
 
+  MATRIX getConst() { return _constCoef; };
   MATRIX getLinear() { return _linearCoef; };
+  TENSOR3 getQuadCubic() { return _cubic2; };
   TENSOR4 getCubic() { return _cubicCoef; };
   TENSOR4 getQuad() { return _quadraticCoef; };
 
@@ -63,8 +65,10 @@ private:
   MATRIX2 _Dm;
   MATRIX _pfpu;
   MATRIX6 _linearCoef;
+  MATRIX6 _constCoef;
 
   TENSOR4 _quadraticCoef;
+  TENSOR3 _cubic2;
   TENSOR4 _cubicCoef;
 
   // material model

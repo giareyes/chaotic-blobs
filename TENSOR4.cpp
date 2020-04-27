@@ -146,6 +146,23 @@ TENSOR4 TENSOR4::modeThreeProduct(const MATRIX& x)
   return result_tensor;
 }
 
+TENSOR3 TENSOR4::modeThreeProduct(const VECTOR& x)
+{
+  assert(_slab_rows == x.size());
+  assert(_slab_rows > 0);
+  TENSOR3 result(_rows, _cols, _slab_cols);
+
+  for(int i = 0; i < _slab_cols; i++)
+  {
+    for(int j = 0; j < _slab_rows; j++)
+    {
+      result._tensor[i] = result._tensor[i] + x[j]*_tensor[i]._tensor[j];
+    }
+  }
+
+  return result;
+}
+
 TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
 {
   assert( x.cols() == _cols);
@@ -182,6 +199,25 @@ TENSOR4 TENSOR4::modeTwoProduct(const MATRIX& x)
     result[i].clear();
 
   return result_tensor;
+}
+
+TENSOR3 TENSOR4::modeTwoProduct(const VECTOR& x) {
+  assert(_cols == x.size());
+  assert(_cols > 0);
+  TENSOR3 result(_rows, _slab_rows, _slab_cols);
+
+  for(int i = 0; i < _cols; i++)
+  {
+    for(int j = 0; j < _slab_rows; j++)
+    {
+      for(int k = 0; k < _slab_cols; k++)
+      {
+        result._tensor[k].col(j) = result._tensor[k].col(j) + x[i]*_tensor[k]._tensor[j].col(i);
+      }
+    }
+  }
+
+  return result;
 }
 
 TENSOR4 TENSOR4::modeOneProduct(const MATRIX& x)

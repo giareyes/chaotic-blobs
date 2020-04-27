@@ -121,6 +121,7 @@ private:
   MATRIX _constCoef;
 
   TENSOR4 _quadraticCoef;
+  TENSOR3 _cubicquad;
   TENSOR4 _cubicCoef;
 
   // the geometry

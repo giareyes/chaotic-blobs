@@ -564,6 +564,7 @@ void TRIANGLE_MESH::createCoefs()
 {
   MATRIX m(_vertices.size()*2,_vertices.size()*2);
   MATRIX constTemp(_vertices.size()*2,_vertices.size()*2);
+  TENSOR3 cubq(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2);
   TENSOR4 tempQuad(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
   TENSOR4 temp(_vertices.size()*2,_vertices.size()*2, _vertices.size()*2,_vertices.size()*2);
   m.setZero();
@@ -576,8 +577,10 @@ void TRIANGLE_MESH::createCoefs()
     //get our current triangle
     TRIANGLE current = getTriangle(x);
 
-    //get the linear coef
+    //get the const coef
+    MATRIX constCoef = current.getConst();
     MATRIX linearCoef = current.getLinear();
+    TENSOR3 cubquad = current.getQuadCubic();
     TENSOR4 quadCoef = current.getQuad();
     TENSOR4 cubicCoef = current.getCubic();
 
@@ -608,10 +611,10 @@ void TRIANGLE_MESH::createCoefs()
           {
             stiffness = true;
 
-            constTemp(global_index_i, global_index_j) += linearCoef(2*i, 2*j);
-            constTemp(global_index_i, global_index_j + 1) += linearCoef(2*i, 2*j + 1);
-            constTemp(global_index_i + 1, global_index_j) += linearCoef(2*i + 1, 2*j);
-            constTemp(global_index_i + 1, global_index_j + 1) += linearCoef(2*i + 1, 2*j + 1);
+            constTemp(global_index_i, global_index_j) += constCoef(2*i, 2*j);
+            constTemp(global_index_i, global_index_j + 1) += constCoef(2*i, 2*j + 1);
+            constTemp(global_index_i + 1, global_index_j) += constCoef(2*i + 1, 2*j);
+            constTemp(global_index_i + 1, global_index_j + 1) += constCoef(2*i + 1, 2*j + 1);
           }
 
           for(int k = 0; k < 3; k++)
@@ -619,6 +622,18 @@ void TRIANGLE_MESH::createCoefs()
             VEC2* current_kv = _triangles[x].vertex(k);
 
             int global_index_k = _allVertsToIndex[current_kv];
+
+            cubq._tensor[global_index_k](global_index_i, global_index_j) += cubquad._tensor[2*k](2*i, 2*j);
+            cubq._tensor[global_index_k](global_index_i, global_index_j + 1) += cubquad._tensor[2*k](2*i, 2*j + 1);
+
+            cubq._tensor[global_index_k](global_index_i + 1, global_index_j) += cubquad._tensor[2*k](2*i + 1, 2*j);
+            cubq._tensor[global_index_k](global_index_i + 1, global_index_j + 1) += cubquad._tensor[2*k](2*i + 1, 2*j + 1);
+
+            cubq._tensor[global_index_k + 1](global_index_i, global_index_j) += cubquad._tensor[2*k + 1](2*i, 2*j);
+            cubq._tensor[global_index_k + 1](global_index_i, global_index_j + 1) += cubquad._tensor[2*k + 1](2*i, 2*j + 1);
+
+            cubq._tensor[global_index_k + 1](global_index_i + 1, global_index_j) += cubquad._tensor[2*k + 1](2*i + 1, 2*j);
+            cubq._tensor[global_index_k + 1](global_index_i + 1, global_index_j + 1) += cubquad._tensor[2*k + 1](2*i + 1, 2*j + 1);
 
             for(int l = 0; l < 3; l++)
             {
@@ -680,12 +695,28 @@ void TRIANGLE_MESH::createCoefs()
 
     quadCoef.clear();
     cubicCoef.clear();
+    cubquad.clear();
   }
 
+  // MATRIX transpose = _U.transpose();
+
+  // _linearCoef = transpose*(m*_U);
+
+  // _cubicCoef = temp.modeFourProduct(transpose);
+  // _cubicCoef = _cubicCoef.modeThreeProduct(transpose);
+  // _cubicCoef = _cubicCoef.modeTwoProduct(transpose);
+  // _cubicCoef = _cubicCoef.modeOneProduct(transpose);
+
+  // _cubicquad = cubq.modeThreeProduct(transpose);
+  // _cubicquad = _cubicquad.modeTwoProduct(transpose);
+  // _cubicquad = _cubicquad.modeOneProduct(transpose);
   _linearCoef = m;
   _cubicCoef = temp;
+  _cubicquad = cubq;
   _constCoef = constTemp;
   _quadraticCoef = tempQuad;
+
+  // transpose.resize(0,0);
 
 }
 ///////////////////////////////////////////////////////////////////////
@@ -700,17 +731,33 @@ void TRIANGLE_MESH::computeMaterialForces()
   VECTOR global_vector(_vertices.size()*2);
   global_vector.setZero();
 
-  //store global vector into _f
-  global_vector += (_linearCoef * _flattenedVerts);
+  VECTOR v =  _flattenedVerts - _u;
 
-  TENSOR3 temp = _cubicCoef.modeFourProduct(_flattenedVerts);
-  MATRIX tempMatrix = temp.modeThreeProduct(_flattenedVerts);
-  global_vector += (tempMatrix*_flattenedVerts);
+  //store global vector into _f
+  global_vector += (_linearCoef * _u);
+  // printf("----------------------------------------------------------\n");
+  // printf("global vector after linear term is: \n");
+  // printVector(global_vector);
+  // printf("\n");
+
+  TENSOR3 temp = _cubicCoef.modeFourProduct(_u);
+  MATRIX tempMatrix = temp.modeThreeProduct(_u);
+  // VECTOR tempVec = tempMatrix*v;
+  // printf("global vector for cubic is: \n");
+  // printVector(tempVec);
+  // printf("\n");
+  global_vector += (tempMatrix*_u);
+
+  tempMatrix = _cubicquad.modeThreeProduct(_u);
+  global_vector += (tempMatrix * _u);
 
   tempMatrix.resize(0,0);
   temp.clear();
 
   _f = global_vector;
+  // printf("global vector is: \n");
+  // printVector(_f);
+  // printf("\n\n\n");
 }
 
 void TRIANGLE_MESH::wackyCollision()
@@ -835,6 +882,7 @@ void TRIANGLE_MESH::stepMotion(float dt, const VEC2& outerForce)
   // step 5: compute R(q+1)
   computeMaterialForces();
   VECTOR reducedR = _U.transpose() * _f;
+  // VECTOR reducedR = _f;
   // printf("internal force is:\n");
   // printVector(_f);
 
@@ -953,7 +1001,7 @@ bool TRIANGLE_MESH::stepQuasistatic()
 void TRIANGLE_MESH::computeStiffnessMatrix(MATRIX& K)
 {
   //can assume K is the correct size, 2V x 2V
-
+  // VECTOR v =  _flattenedVerts - _u;
   TENSOR3 temp = _quadraticCoef.modeFourProduct(_flattenedVerts);
   K = temp.modeThreeProduct(_flattenedVerts);
   K += _constCoef;

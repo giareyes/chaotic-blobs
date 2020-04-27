@@ -17,6 +17,13 @@ public:
 
   MATRIX modeThreeProduct(const VECTOR& x);
   TENSOR3 modeThreeProduct(const MATRIX& x);
+  TENSOR3 constMult(const Real& scalar);
+
+  MATRIX modeTwoProduct(const VECTOR& x);
+  TENSOR3 modeTwoProduct(const MATRIX& x);
+
+  TENSOR3 modeOneProduct(const MATRIX& x);
+
   TENSOR3& operator+=(const TENSOR3& m);
   TENSOR3& operator*=(const Real& scalar);
 

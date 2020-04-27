@@ -29,10 +29,10 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     // as it turns out, the linear coefficient matrix is equal to the constant matrix, and
     // both are equal to (pfpu)T * (pfpu)
     _pfpu = pFpuVectorized();
-    _linearCoef = _pfpu.transpose() * _pfpu;
+    _constCoef = _pfpu.transpose() * _pfpu;
 
     // multiply by (-4*mu - 4*lambda)*-1*restArea
-    _linearCoef = restArea()*(4*_mu + 4*_lambda)*_linearCoef;
+    _constCoef = restArea()*(4*_mu + 4*_lambda)*_constCoef;
 
     // create the _quadraticCoef
     TENSOR4 quad(4,4,4,4);
@@ -180,6 +180,29 @@ TRIANGLE::TRIANGLE(MATERIAL* material, const vector<VEC2*>& vertices) :
     cubic_lambda.clear();
     quadLambda.clear();
 
+
+    /// add on new stuff
+    VECTOR pos(6);
+    for(int i = 0; i < 3; i++)
+    {
+      pos[2*i] = (_restPose[i])[0];
+      pos[2*i + 1] = (_restPose[i])[1];
+    }
+
+    _cubic2 = _cubicCoef.modeFourProduct(pos); //D x_4 x;
+    _linearCoef = _cubic2.modeThreeProduct(pos); // D x_4 x x_3 x
+    _linearCoef += _cubic2.modeTwoProduct(pos); // D x_4 x x_2 x
+
+    TENSOR3 tempCubic = _cubicCoef.modeThreeProduct(pos); // D x_3 x
+
+    _linearCoef += tempCubic.modeTwoProduct(pos); // D x_3 x x_2 x
+    _linearCoef += _constCoef;
+
+    _cubic2 += tempCubic;
+    _cubic2 += _cubicCoef.modeTwoProduct(pos);
+
+    tempCubic.clear();
+
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -232,7 +255,7 @@ VECTOR TRIANGLE::precomputedLinearCoef()
     pos[2*i + 1] = (*_vertices[i])[1];
   }
 
-  linearForce = _linearCoef*pos;
+  linearForce = _constCoef*pos;
   return linearForce;
 }
 
@@ -297,7 +320,7 @@ vector<MATRIX> TRIANGLE::computeForceJacobian()
   // d^2 psi/ dx^2 = A transpose * B * A
   // jacobian = precomputedQuadCoef() + _linearCoef;
   jacobian.push_back(precomputedQuadCoef());
-  jacobian.push_back(_linearCoef);
+  jacobian.push_back(_constCoef);
 
   return jacobian;
 }
