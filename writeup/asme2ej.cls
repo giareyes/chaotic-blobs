@@ -2,13 +2,13 @@
 % 	for LaTeX version 2e - 2/14/01
 %
 % WARNING: This is an unauthorized class file. It has not been thoroughly
-% tested so it probably still has bugs. I'll do my best to fix them when 
+% tested so it probably still has bugs. I'll do my best to fix them when
 % found.
 %
 % ---------------------------------------------------------------------------
 %   filename:      asme2e.cls
-%   version 1.4, May 12, 2005. 
-%        (1) Modified asme2e.cls to support pdflatex  
+%   version 1.4, May 12, 2005.
+%        (1) Modified asme2e.cls to support pdflatex
 %        (2) Modified asme2e.cls to support multiple lines in conference name.
 %             --- Matt Campbell mtycampbell@ucdavis.edu
 %   version:       1.2
@@ -28,11 +28,11 @@
 %		      The default is now 10pt.
 %		   3. Add support for the new reference format required by
 %		      ASME. This requires the use of Bibtex.
-%                  4. Eliminate the subfigure code held over from the original 
+%                  4. Eliminate the subfigure code held over from the original
 %                     ASME style file. Usepackage subfigure instead.
 %                  5. Add cleanhead option to eliminate the banner on the title
 %                     page.
-%                  6. Add cleanfoot option to eliminate the copyright on each 
+%                  6. Add cleanfoot option to eliminate the copyright on each
 %                     footer.
 %   usage:         \documentclass[options]{asme2e}
 % ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@
 
 
 % ------------------------------------------------------
-%                Font and Size Definitions 
+%                Font and Size Definitions
 % ------------------------------------------------------
 
 \setlength\lineskip{1\p@}
@@ -96,8 +96,8 @@
 \renewcommand\normalsize{%
    \@setfontsize\normalsize\@xpt{12}%
    \abovedisplayskip 18\p@ \@plus2\p@ \@minus5\p@
-   \abovedisplayshortskip \abovedisplayskip 
-   \belowdisplayshortskip \abovedisplayskip 
+   \abovedisplayshortskip \abovedisplayskip
+   \belowdisplayshortskip \abovedisplayskip
    \belowdisplayskip \abovedisplayskip
    \let\@listi\@listI}
 \normalsize
@@ -114,7 +114,7 @@
    \belowdisplayshortskip 3\p@ \@plus\p@ \@minus2\p@
    \def\@listi{\leftmargin\leftmargini
                \topsep 3\p@ \@plus\p@ \@minus\p@
-               \parsep \z@ 
+               \parsep \z@
                \itemsep \parsep}%
    \belowdisplayskip \abovedisplayskip}
 \newcommand\scriptsize{\@setfontsize\scriptsize\@viipt{8}}
@@ -346,7 +346,7 @@
    \setlength{\topmargin}{1.5in}% use 2.0in top marging for latex - same as original
    %\setlength{\topmargin}{2.0in}% use 2.0in top marging for latex - same as original
 \fi
-%\setlength{\topmargin}{2.0in}% original line 
+%\setlength{\topmargin}{2.0in}% original line
 % End pdflatex section
 \setlength{\marginparwidth}{0pt}
 \setlength{\marginparsep}{11pt}
@@ -359,7 +359,7 @@
 \setlength{\topskip}{10pt}
 \setlength{\footskip}{24pt}
 %\setlength{\textheight}{9.00in}
-\setlength{\textheight}{10.00in}
+\setlength{\textheight}{9.00in}
 \advance\textheight by -\headheight
 \advance\textheight by -\headsep
 \setlength{\textwidth}{6.85in}
@@ -671,7 +671,7 @@
 % ------------------------------------------------------------------------
 %                         Tables and Figures
 % ------------------------------------------------------------------------
-\setcounter{topnumber}{4}         % These change the float placement 
+\setcounter{topnumber}{4}         % These change the float placement
 \renewcommand{\topfraction}{.9}
 \setcounter{bottomnumber}{4}
 \renewcommand{\bottomfraction}{.9}
@@ -680,7 +680,7 @@
 \renewcommand{\floatpagefraction}{.901}
 \setcounter{dbltopnumber}{4}
 \renewcommand{\dbltopfraction}{.9}
-\renewcommand{\dblfloatpagefraction}{.91}         
+\renewcommand{\dblfloatpagefraction}{.91}
 
 %\newcommand\figurename{Figure}
 \newcommand\figurename{Fig.}
@@ -819,7 +819,7 @@
   \let\maketitle\relax\let\@maketitle\relax
   \gdef\@thanks{}\gdef\@author{}\gdef\@title{}}
 \fi
- 
+
 %\renewcommand\title[1]{\gdef\@title{\uppercase{#1}}}
 \renewcommand\title[1]{\gdef\@title{#1}}
 
@@ -887,7 +887,7 @@
         \quotation
      \fi}
      {\if@twocolumn\else\endquotation\fi}
-\fi 
+\fi
 
 % Get the multiple author set
 
@@ -946,7 +946,7 @@
      \end{tabular}}}
 
 % ---------------------------------------------------------------------------
-%                           Bibliography 
+%                           Bibliography
 % ---------------------------------------------------------------------------
 
 \newcommand\appendix{\par
@@ -1243,7 +1243,7 @@
   \def\@proof{\trivlist \item[\hskip \labelsep{\it Proof.}]}
   \def\@optargproof[#1]{\trivlist \item[\hskip \labelsep{\it #1.}]}
   \def\endproof{\endtrivlist}
-  \def\qed{\vskip-\lastskip\vskip-\baselineskip\hbox to \hsize{\hfill$\Box$}} 
+  \def\qed{\vskip-\lastskip\vskip-\baselineskip\hbox to \hsize{\hfill$\Box$}}
 }
 
 
@@ -1322,7 +1322,7 @@
 
 \fi
 
- 
+
 %\def\ps@myheadings{%
 %    \let\@mkboth\@gobbletwo
 %    \ifthenelse{\@cleanfoot = 1}{
@@ -1365,5 +1365,3 @@
 \endinput
 
 % End of Class
-
-

@@ -1,6 +1,6 @@
 %%% use twocolumn and 10pt options with the asme2ej format
 \documentclass[twocolumn,10pt]{asme2ej}
-
+\usepackage{amssymb}
 \usepackage{epsfig} %% for loading postscript figures
 
 \title{De-Mystifying Reduced-Order St. Venant-Kirchhoff Deformable Models}
@@ -16,7 +16,7 @@
 \begin{abstract}
 {\it The goal of this paper is to document each step taken in recreating
 the results of Real-Time Subspace Integration for St. Venant-Kirchhoff Deformable Models \cite{barbic}, so that
-others may use this as a guide to replicate his work.
+others may use this as a guide to replicate this work.
 }
 \end{abstract}
 
@@ -31,21 +31,69 @@ others may use this as a guide to replicate his work.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-Introduce the idea of the paper.
+The goal of this paper is to document each step taken in recreating Barbic and James's research from their 2005
+paper \cite{barbic}. In this research, they utilize past work on real-time deformable objects and model reduction in solid mechanics to speed up computations and allow for large deformations. Finite Element Method is used to discretize partial differential equations of solid continuum mechanics, allowing motion to be described through the Euler-Lagrange equation,
 
-% In order to get started in generating a two-column version of your paper, please format the document with 0.75in top margin, 1.5in bottom margin and 0.825in left and right margins.  Break the text into two sections one for the title heading, and another for the body of the paper.
-%
-% The format of the heading is not critical, on the other hand formatting of the body of the text is the primary goal of this exercise.  This will allow you to see that the figures are matched to the column width and font size of the paper.  The double column of the heading section is set to 1.85in for the first column, a 0.5in spacing, and 4.5in for the second column.  For the body of the paper, set it to 3.34in for both columns with 0.17in spacing, both are right justified.
-%
-% The information that is the focus of this exercise is found in
-% section~\ref{sect_figure}.
-% Please use this template to format your paper in a way that is similar to the printed form of the Journal of Mechanical Design.  This will allow you to verify that the size and resolution of your figures match the page layout of the journal.  The ASME Journal of Mechanical Design will no longer publish papers that have the errors demonstrated here.
-%
-% ASME simply requires that the font should be the appropriate size and not be blurred or pixilated, and that lines should be the appropriate weight and have minimal, preferably no, pixilation or rasterization.
-%
-% The journal uses 10pt Times Roman Bold for headings, but Times Bold is good enough for this effort.  The text is set at 9pt Times Roman, and again Times will be fine.  Insert a new line after the heading, and two lines after each section.  This is not exactly right but it is close enough.
-%
-%
+\begin{equation}
+M\ddot u + D(u, \dot u) + R(u) = f
+\label{eq_motion}
+\end{equation}
+
+where $M \in \mathbb{R}^{2n \times 2n }$ is the mass matrix, $D$ is the damping force, $R$ is internal force, and $f$ is external force. $u \in \mathbb{R}^{2n}$ is the displacement vector. This equation is then further reduced by introducing a time-independent matrix, $U \in \mathbb{R}^{2n \times r}$, specifying a basis of some r-dimensional linear subspace. After this reduction, the equation and each of its terms can be solved using:
+
+\begin{equation}
+\tilde{M}\ddot q + \tilde{D}(q, \dot q) + \tilde{R}(q) = \tilde{f}
+\label{eq_rmotion}
+\end{equation}
+
+where $q, \tilde{D}(q, \dot q), \tilde{R}(q), \tilde{f} \in \mathbb{R}^{r}$, $\tilde{M} \in \mathbb{R}^{r \times r}$, and each
+can be found through the equations:
+
+\begin{equation}
+u = Uq
+\label{eq_basisreduction}
+\end{equation}
+\begin{equation}
+\tilde{M} = U^{T}MU
+\label{eq_rmass}
+\end{equation}
+\begin{equation}
+\tilde{D}(q, \dot q) = U^{T}D(Uq, U \dot q)
+\label{eq_rdamp}
+\end{equation}
+\begin{equation}
+\tilde{R}(q) = U^{T}D(Uq)
+\label{eq_rinternal}
+\end{equation}
+\begin{equation}
+\tilde{f} = U^{T}f
+\label{eq_rexternal}
+\end{equation}
+\begin{equation}
+\tilde{K} = U^{T}K(Uq)U
+\label{eq_rstiffness}
+\end{equation}
+
+Using these equations to reduce the problem speeds up the computation of motion to a degree, but everything can be
+sped up further if you treat the calculation of $R$ as cubic polynomial and $K$ as a quadratic polynomial. Then,
+you can precompute constant coefficients to these equations, such that
+
+\begin{equation}
+\tilde{R}(q) = U^{T}R(q) = P^{i}q_{i} + Q^{ij}q_{i}q_{j} + S^{ijk}q_{i}q_{j}q_{k}
+\label{eq_rcubicpoly}
+\end{equation}
+
+\begin{equation}
+\tilde{K}(q) = \frac{\partial \tilde{R}(q)}{\partial q_{l}} = P^{l} + (Q^{li} + Q^{il})q_{i} + (S^{ijl} + S^{ilj} + S^{lij} )q_{i}q_{j}
+\label{eq_rquadpoly}
+\end{equation}
+
+The reduced Euler-Lagrange equation of motion can then be solved using a Newmark integrator, animating large deformations
+of deformable models more efficiently than previously possible.
+
+This paper will start from the very beginning of the process, i.e. creating triangle objects to form a triangle mesh for any
+specified model, and walk through every step until an actual animation is created at the end. OpenGL is used for drawing and displaying images. 
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Creating the Triangles}
 
@@ -58,7 +106,7 @@ This section isn't necessary if you are planning on implementing the cubic polyn
 as a debugging tool.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Computing DF/Dx}
+\subsection{Computing dF/dx}
 
 An explanation of how to compute DF/Dx.
 
@@ -204,13 +252,13 @@ Thanks to Barbic for writing the paper and my advisor Theodore Kim.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \section{Footnotes\protect\footnotemark}
 % \footnotetext{Examine the input file, asme2ej.tex, to see how a footnote is given in a head.}
 %
 % Footnotes are referenced with superscript numerals and are numbered consecutively from 1 to the end of the paper\footnote{Avoid footnotes if at all possible.}. Footnotes should appear at the bottom of the column in which they are referenced.
-%
-%
+
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % \section{Mathematics}
 %
