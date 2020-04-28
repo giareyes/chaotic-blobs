@@ -1,0 +1,372 @@
+%%% use twocolumn and 10pt options with the asme2ej format
+\documentclass[twocolumn,10pt]{asme2ej}
+
+\usepackage{epsfig} %% for loading postscript figures
+
+\title{De-Mystifying Reduced-Order St. Venant-Kirchhoff Deformable Models}
+
+\author{Gillian P. Reyes
+}
+
+\begin{document}
+
+\maketitle
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+{\it The goal of this paper is to document each step taken in recreating
+the results of Real-Time Subspace Integration for St. Venant-Kirchhoff Deformable Models \cite{barbic}, so that
+others may use this as a guide to replicate his work.
+}
+\end{abstract}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{nomenclature}
+% \entry{A}{You may include nomenclature here.}
+% \entry{$\alpha$}{There are two arguments for each entry of the nomemclature environment, the symbol and the definition.}
+% \end{nomenclature}
+%
+% The primary text heading is  boldface and flushed left with the left margin.  The spacing between the  text and the heading is two line spaces.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+Introduce the idea of the paper.
+
+% In order to get started in generating a two-column version of your paper, please format the document with 0.75in top margin, 1.5in bottom margin and 0.825in left and right margins.  Break the text into two sections one for the title heading, and another for the body of the paper.
+%
+% The format of the heading is not critical, on the other hand formatting of the body of the text is the primary goal of this exercise.  This will allow you to see that the figures are matched to the column width and font size of the paper.  The double column of the heading section is set to 1.85in for the first column, a 0.5in spacing, and 4.5in for the second column.  For the body of the paper, set it to 3.34in for both columns with 0.17in spacing, both are right justified.
+%
+% The information that is the focus of this exercise is found in
+% section~\ref{sect_figure}.
+% Please use this template to format your paper in a way that is similar to the printed form of the Journal of Mechanical Design.  This will allow you to verify that the size and resolution of your figures match the page layout of the journal.  The ASME Journal of Mechanical Design will no longer publish papers that have the errors demonstrated here.
+%
+% ASME simply requires that the font should be the appropriate size and not be blurred or pixilated, and that lines should be the appropriate weight and have minimal, preferably no, pixilation or rasterization.
+%
+% The journal uses 10pt Times Roman Bold for headings, but Times Bold is good enough for this effort.  The text is set at 9pt Times Roman, and again Times will be fine.  Insert a new line after the heading, and two lines after each section.  This is not exactly right but it is close enough.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Creating the Triangles}
+
+An explanation of how to create a triangle object.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing StVK}
+
+This section isn't necessary if you are planning on implementing the cubic polynomial approach, but it's useful
+as a debugging tool.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Computing DF/Dx}
+
+An explanation of how to compute DF/Dx.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Vectorizing Tensors}
+
+An explanation of how to vectorize a tensor, bringing the order down by one.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Creating the Triangle Mesh}
+
+An explanation of how to create a larger triangle mesh out of triangles. It is useful if this is its own
+object.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementing the Euler-Lagrange Equation of Motion}
+
+An explanation of how to create a larger triangle mesh out of triangles. It is useful if this is its own
+object.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing Internal Force}
+
+An explanation of how to implement internal force using the StVK set up. Can be skipped for now if you are
+planning on implementing the cubic polynomial approach, but useful for debugging.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing the Tangent Stiffness Matrix}
+
+An explanation of how to implement the tangent stiffness matrix using the StVK set up. Can be skipped for now if you are
+planning on implementing the cubic polynomial approach, but useful for debugging.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing the Mass Matrix}
+
+An explanation of how to implement the mass matrix.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing the Damping Matrix}
+
+An explanation of how to implement the damping matrix.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementing the Newmark Integrator}
+
+An explanation of how to take a step in time.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{An Overview of Tensors}
+
+A brief explanation of tensors, what they represent here, and how they are used. This will be necessary to understand
+before moving on to the precomputed coefficients section.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Generating Precomputed Coefficients}
+
+An explanation of how to create precomputed coefficients for the cubic polynomial approach for the unreduced problem.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Coefficients for the Tangent Stiffness Matrix}
+
+An explanation of how to derive the coefficients for the tangent stiffness matrix equation.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Constant Coefficient for the Tangent Stiffness Matrix}
+
+An explanation of how to derive the constant coefficient for the tangent stiffness matrix.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Quadratic Coefficient for the Tangent Stiffness Matrix}
+
+An explanation of how to derive the quadratic coefficient for the tangent stiffness matrix.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Creating the Global Tangent Stiffness Matrix Coefficients}
+
+An explanation of how to derive the global tangent stiffness matrix.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Coefficients for Internal Force}
+
+An explanation of how to derive the coefficients for the internal force equation.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Linear Coefficient for Internal Force}
+
+An explanation of how to derive the linear coefficient for internal force.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Cubic Coefficient for for Internal Force}
+
+An explanation of how to derive the cubic coefficient for internal force.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Creating the Global Internal Force Coefficients}
+
+An explanation of how to derive the global internal force.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Generating a Deformation Basis}
+
+An explanation of how to generate a deformation basis.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reducing the Euler-Lagrange Equation of Motion}
+
+An explanation of how to push U through so that we can reduce the order of our calculations.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reducing the Internal Force}
+
+An explanation of how to reduce the calculation of the internal forces, changing the coefficients
+of the polynomial.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reducing the Global Tangent Stiffness Matrix}
+
+An explanation of how to reduce the calculation of the stiffness, changing the coefficients
+of the polynomial.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reducing All Other Forces}
+
+An explanation of how to reduce all other forces.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Running the program}
+
+A brief explanation of how to run the program
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}
+
+End it by explaining how I hope this helps anyone who wants to try implementing this on their own.
+Explain how this can probably be optimized further by flattening all tensors.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{acknowledgment}
+
+Thanks to Barbic for writing the paper and my advisor Theodore Kim.
+
+\end{acknowledgment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Footnotes\protect\footnotemark}
+% \footnotetext{Examine the input file, asme2ej.tex, to see how a footnote is given in a head.}
+%
+% Footnotes are referenced with superscript numerals and are numbered consecutively from 1 to the end of the paper\footnote{Avoid footnotes if at all possible.}. Footnotes should appear at the bottom of the column in which they are referenced.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Mathematics}
+%
+% Equations should be numbered consecutively beginning with (1) to the end of the paper, including any appendices.  The number should be enclosed in parentheses and set flush right in the column on the same line as the equation.  An extra line of space should be left above and below a displayed equation or formula. \LaTeX\ can automatically keep track of equation numbers in the paper and format almost any equation imaginable. An example is shown in Eqn.~(\ref{eq_ASME}). The number of a referenced equation in the text should be preceded by Eqn.\ unless the reference starts a sentence in which case Eqn.\ should be expanded to Equation.
+%
+% \begin{equation}
+% f(t) = \int_{0_+}^t F(t) dt + \frac{d g(t)}{d t}
+% \label{eq_ASME}
+% \end{equation}
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Figures}
+% \label{sect_figure}
+%
+% All figures should be positioned at the top of the page where possible.  All figures should be numbered consecutively and centered under the figure as shown in Fig.~\ref{figure_ASME}. All text within the figure should be no smaller than 7~pt. There should be a minimum two line spaces between figures and text. The number of a referenced figure or table in the text should be preceded by Fig.\ or Tab.\ respectively unless the reference starts a sentence in which case Fig.\ or Tab.\ should be expanded to Figure or Table.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+% \begin{figure}[t]
+% \begin{center}
+% \setlength{\unitlength}{0.012500in}%
+% \begin{picture}(115,35)(255,545)
+% \thicklines
+% \put(255,545){\framebox(115,35){}}
+% \put(275,560){Beautiful Figure}
+% \end{picture}
+% \end{center}
+% \caption{The caption of a single sentence does not have period at the end}
+% \label{figure_ASME}
+% \end{figure}
+% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% In the following subsections, I have inserted figures that have been provided by authors in order to demonstrate what to avoid.  In each case the authors provided figures that are 3.25in wide and 600dpi in the .tif graphics format.  The papers containing these figures have been held from production due to their poor quality.
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subsection{The 1st Example of Bad Figure}
+%
+% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+% %%% 3.34in is the maximum width you can have for a figure
+% \begin{figure}
+% \centerline{\psfig{figure=figure/FMANU_MD_05_1107_11.ps,width=3.34in}}
+% \caption{Example taken from a paper that was held from production because the image quality is poor.  ASME sets figures captions in 8pt, Helvetica Bold.}
+% \label{fig_example1.ps}
+% \end{figure}
+% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+%
+% In order to place the figure in this template using MSWord, select ����Insert Picture from File,���� and use wrapping that is  ����top and bottom.����  Make sure the figure is 3.25in wide.
+%
+% Figure~`\ref{fig_example1.ps}
+% was taken from a recent paper that was held from publication, because the text is fuzzy and unreadable.  It was probably obtained by taking a screen shot of the computer output of the author����s software.  This means the original figure was 72dpi (dots per inch) on a computer screen.  There is no way to improve the quality such a low resolution figure.
+%
+% In order to understand how poor the quality of this figure is, please zoom in slightly, say to 200\%.  Notice that while the font of the paper is clear at this size, the font in the figures is fuzzy and blurred.  It is impossible to make out the small symbol beside the numbers along the abscissa of the graph.  Now consider the labels ����Time���� and ����Cost.����  They are clearly in fonts larger that the text of the article, yet the pixilation or rasterization, associated with low resolution is obvious. This figure must be regenerated at higher resolution to ensure quality presentation.
+%
+% The poor quality of this figure is immediately obvious on the printed page, and reduces the impact of the research contribution of the paper, and in fact detracts from the perceived quality of the journal itself.
+%
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subsection{The 2nd Example of Bad Figure}
+%
+% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+% \begin{figure}
+% \centerline{\psfig{figure=figure/FMANU_MD_05_1272_5.ps,width=3.34in}}
+% \caption{While this figures is easily readable at a double column width of 6.5in, when it is shrunk to 3.25in column width the text is unreadable.   This paper was held from production.}
+% \label{fig_example2.ps}
+% \end{figure}
+% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+%
+% Figure~\ref{fig_example2.ps}
+% demonstrates a common problem that arises when a figure is scaled down fit a single column width of 3.25in.  The original figure had labels that were readable at full size, but become unreadable when scaled to half size.  This figure also suffers from poor resolution as is seen in the jagged lines the ovals that form the chain.
+%
+% This problem can be addressed by increasing the size of the figure to a double column width of 6.5in, so the text is readable.  But this will not improve the line pixilation, and a large low resolution figure is less desirable than a small one.  This also significantly expands the length of the paper, and may cause it to exceed the JMD nine page limit.  Additional pages require page charges of \$200 per page.  It is best to regenerate the figure at the resolution that ensures a quality presentation.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subsection{The 3rd Example of Bad Figure}
+% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+% \begin{figure}
+% %\centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=3.34in}}
+% \centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=3.25in}}
+% \caption{Another example of a figure with unreadable text.  Even when the paper was expanded to double column width the text as shown in Fig.~\ref{fig_example4.ps} was of such low quality that the paper was held from production.}
+% \label{fig_example3.ps}
+% \end{figure}
+% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+%
+% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+% %%% the maximum width in double column is 6.85in
+% \begin{figure*}
+% \centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=6.85in}}
+% \caption{A figure expanded to double column width the text from Figure~\ref{fig_example3.ps}}
+% \label{fig_example4.ps}
+% \end{figure*}
+% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+% An author provided the high resolution image
+% in Fig.~\ref{fig_example3.ps}
+% that was sized to a single column width of 3.25in.  Upon seeing the poor quality of the text, the publisher scaled the image to double column width as shown in Fig.~\ref{fig_example4.ps}
+% at which point it took half of a page.  The publisher went on to do this for all eight figures generating four pages of figures that the author did not expect. ASME stopped production of the paper even with the larger figures due to the pixilation of the font.
+%
+% Clearly the text in this figure is unreadable, and it is doubtful that the author can print the output in a way that it is readable.  This is a problem that the author must solve, not the publisher.
+%
+% As you might expect, I have many more examples, but in the end the author is the best judge of what is needed in each figure.  ASME simply requires that the image meet a minimum standard for font and line quality, specifically the font should be the appropriate size and not be blurred or pixilated, and that lines should be the appropriate weight and have minimal, preferably no, pixilation or rasterization.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Tables}
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%% begin table   %%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{table}[t]
+% \caption{Figure and table captions do not end with a period}
+% \begin{center}
+% \label{table_ASME}
+% \begin{tabular}{c l l}
+% & & \\ % put some space after the caption
+% \hline
+% Example & Time & Cost \\
+% \hline
+% 1 & 12.5 & \$1,000 \\
+% 2 & 24 & \$2,000 \\
+% \hline
+% \end{tabular}
+% \end{center}
+% \end{table}
+% %%%%%%%%%%%%%%%% end table %%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% All tables should be numbered consecutively  and centered above the table as shown in Table~\ref{table_ASME}. The body of the table should be no smaller than 7 pt.  There should be a minimum two line spaces between tables and text.
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{Citing References}
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The ASME reference format is defined in the authors kit provided by the ASME.  The format is:
+%
+% \begin{quotation}
+% {\em Text Citation}. Within the text, references should be cited in  numerical order according to their order of appearance.  The numbered reference citation should be enclosed in brackets.
+% \end{quotation}
+%
+%
+% The bibliography style required by the ASME is unsorted with entries appearing in the order in which the citations appear. If that were the only specification, the standard {\sc Bib}\TeX\ unsrt bibliography style could be used. Unfortunately, the bibliography style required by the ASME has additional requirements (last name followed by first name, periodical volume in boldface, periodical number inside parentheses, etc.) that are not part of the unsrt style. Therefore, to get ASME bibliography formatting, you must use the \verb+asmems4.bst+ bibliography style file with {\sc Bib}\TeX. This file is not part of the standard BibTeX distribution so you'll need to place the file someplace where LaTeX can find it (one possibility is in the same location as the file being typeset).
+%
+% With \LaTeX/{\sc Bib}\TeX, \LaTeX\ uses the citation format set by the class file and writes the citation information into the .aux file associated with the \LaTeX\ source. {\sc Bib}\TeX\ reads the .aux file and matches the citations to the entries in the bibliographic data base file specified in the \LaTeX\ source file by the \verb+\bibliography+ command. {\sc Bib}\TeX\ then writes the bibliography in accordance with the rules in the bibliography .bst style file to a .bbl file which \LaTeX\ merges with the source text.  A good description of the use of {\sc Bib}\TeX\ can be found in \cite{latex, goosens} (see how two references are handled?).  The following is an example of how three or more references \cite{latex, asmemanual,  goosens} show up using the \verb+asmems4.bst+ bibliography style file in conjunction with the \verb+asme2ej.cls+ class file. Here are some more \cite{art, blt, ibk, icn, ips, mts, mis, pro, pts, trt, upd} which can be used to describe almost any sort of reference.
+%
+
+% Here's where you specify the bibliography style file.
+% The full file name for the bibliography style file
+% used for an ASME paper is asmems4.bst.
+\bibliographystyle{asmems4}
+
+% Here's where you specify the bibliography database file.
+% The full file name of the bibliography database for this
+% article is asme2e.bib. The name for your database is up
+% to you.
+\bibliography{writeup}
+
+\end{document}
