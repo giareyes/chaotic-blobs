@@ -2,6 +2,7 @@
 \documentclass[twocolumn,10pt]{asme2ej}
 \usepackage{amssymb}
 \usepackage{epsfig} %% for loading postscript figures
+\usepackage{graphicx}
 
 \title{De-Mystifying Reduced-Order St. Venant-Kirchhoff Deformable Models}
 
@@ -21,17 +22,9 @@ others may use this as a guide to replicate this work.
 \end{abstract}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{nomenclature}
-% \entry{A}{You may include nomenclature here.}
-% \entry{$\alpha$}{There are two arguments for each entry of the nomemclature environment, the symbol and the definition.}
-% \end{nomenclature}
-%
-% The primary text heading is  boldface and flushed left with the left margin.  The spacing between the  text and the heading is two line spaces.
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-The goal of this paper is to document each step taken in recreating Barbic and James's research from their 2005
+The goal of this paper is to document each step taken in recreating Barbič and James's research from their 2005
 paper \cite{barbic}. In this research, they utilize past work on real-time deformable objects and model reduction in solid mechanics to speed up computations and allow for large deformations. Finite Element Method is used to discretize partial differential equations of solid continuum mechanics, allowing motion to be described through the Euler-Lagrange equation,
 
 \begin{equation}
@@ -92,18 +85,84 @@ The reduced Euler-Lagrange equation of motion can then be solved using a Newmark
 of deformable models more efficiently than previously possible.
 
 This paper will start from the very beginning of the process, i.e. creating triangle objects to form a triangle mesh for any
-specified model, and walk through every step until an actual animation is created at the end. OpenGL is used for drawing and displaying images. 
+specified model, and walk through every step until an actual animation is created at the end. OpenGL is used for drawing and displaying images, and C++ was used for the rest of the implementation.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{An Overview of Tensors}
+
+Before going into the details of how to implement reduced-order St. Venant-Kirchoff deformable models, it's important to review tensors, as they show up in many places throughout this paper. The following explanation is influenced by Kolda and Bader's paper on Tensor Decomposition and Applications \cite{tensors}, and contains extra findings that emerged through implementation.
+
+A \textbf{tensor} is a multidimensional array. For example, a matrix is a second order tensor, and a vector is a first order tensor. An $N$th order tensor is an array of $N$ dimensions, and thus indexed using $N$ indices.
+
+%%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+%%% 3.34in is the maximum width you can have for a figure
+\begin{figure}
+\centerline{\includegraphics[keepaspectratio,width=3.34in, natwidth = 1570, natheight = 552]{figure/fig1.png}}
+\caption{Example taken from a paper that was held from production because the image quality is poor.  ASME sets figures captions in 8pt, Helvetica Bold.}
+\label{fig_ex1.png}
+\end{figure}
+%%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Creating the Triangles}
 
-An explanation of how to create a triangle object.
+When modelling solids using a discrete method, the model is represented by a mesh of polygons. In this paper, triangles were
+used, so all results of this paper are based on triangle calculations.
+
+In the code for this paper, a triangle object was created for cleaner implementation. Important variables to keep track of are:
+\begin{enumerate}
+  \item a vector of rest vertices. This should stay constant throughout the simulation.
+  \item a vector of actual positions, which update as the whole mesh moves.
+  \item a material model of some sort, to keep track of lambda and mu values for force calculations.
+  \item rest area; this is used in calculating the internal force and stiffness matrix.
+  \item precomputed coefficients for the cubic polynomial interpretation of internal force and quadratic polynomial
+  for the tangent stiffness matrix. This will be discussed in a later section.
+\end{enumerate}
+
+In addition to storing variables, there are a few useful functions that can go into this object as well:
+\begin{enumerate}
+  \item getter/setter functions for all private variables.
+  \item a function that computes $\frac{\partial F}{\partial u}$.
+  \item a function that computes the deformation gradient, $F$.
+  \item a function to compute the internal force for the triangle given the deformation gradient.
+  \item a function to compute the force jacobian for the triangle given the deformation gradient.
+\end{enumerate}
+
+The last three functions are not necessary for the cubic polynomial approach, but are useful for debugging purposes.
+All terms used in this section will be explained in the following subsections, which will go into more details of
+implementation.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Computing the Deformation Gradient}
+
+When a solid is deformed, the \textbf{Deformation Gradient}, $F \in \mathbb{R}^{2 \times 2}$, is the linear mapping from a rest vertex to its deformed position (without translation). This mapping can be used in the calculation of strain energy, so it's an important value to calculate if the cubic polynomial approach is not being used.
+
+The deformation gradient can be found using the equation:
+
+\begin{equation}
+F = D_sD_{m}^{-1}
+\label{eq_stvk}
+\end{equation}
+
+Where $D_s$ is the spatial matrix made of the deformed vertices, and $D_m$ is the material matrix made of the rest vertices.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing StVK}
 
-This section isn't necessary if you are planning on implementing the cubic polynomial approach, but it's useful
-as a debugging tool.
+This section is not necessary for the cubic polynomial approach, but it's useful as a debugging tool. In the code
+for this paper, the implementation of StVK is tied to the material of the triangle, and is called by the functions
+that calculate internal force and the force jacobian for an individual triangle.
+
+A St. Venant-Kirchhoff deformable model is defined by the StVK strain energy, where
+
+\begin{equation}
+\psi = \mu ||F^TF - I||^2 + \frac{\lambda}{2}tr(F^TF - I)^2
+\label{eq_stvk}
+\end{equation}
+
+, and $\lambda$ and $\mu$ are Lamé coefficients.
+
+In computing the internal force of a single triangle, the Piola-Kirchhoff stress tensor
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing dF/dx}
@@ -116,6 +175,10 @@ An explanation of how to compute DF/Dx.
 An explanation of how to vectorize a tensor, bringing the order down by one.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Computing Internal Force and the Force Jacobian (The Non-Polynomial Way)}
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Creating the Triangle Mesh}
 
 An explanation of how to create a larger triangle mesh out of triangles. It is useful if this is its own
@@ -153,12 +216,6 @@ An explanation of how to implement the damping matrix.
 \subsection{Implementing the Newmark Integrator}
 
 An explanation of how to take a step in time.
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{An Overview of Tensors}
-
-A brief explanation of tensors, what they represent here, and how they are used. This will be necessary to understand
-before moving on to the precomputed coefficients section.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating Precomputed Coefficients}
@@ -246,7 +303,7 @@ Explain how this can probably be optimized further by flattening all tensors.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{acknowledgment}
 
-Thanks to Barbic for writing the paper and my advisor Theodore Kim.
+Thanks to Barbič for writing the paper and my advisor Theodore Kim.
 
 \end{acknowledgment}
 

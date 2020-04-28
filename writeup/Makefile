@@ -4,8 +4,7 @@ all:
 	bibtex writeup
 	latex writeup
 	latex writeup
-	dvips -o writeup.ps writeup
-	ps2pdf writeup.ps writeup.pdf
+	dvipdfm writeup
 
 clean:
 	(rm -rf *.ps *.log *.dvi *.aux *.*% *.lof *.lop *.lot *.toc *.idx *.ilg *.ind *.bbl *blg)
