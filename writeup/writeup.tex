@@ -4,6 +4,9 @@
 \usepackage{amsmath}
 \usepackage{epsfig} %% for loading postscript figures
 \usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algorithmicx, float}
+\usepackage{algpseudocode}
 
 \title{De-Mystifying Reduced-Order St. Venant-Kirchhoff Deformable Models}
 
@@ -269,7 +272,7 @@ Before we can calculate internal force and the force jacobian, we need to find t
 \label{eq_dFdx}
 \end{equation}
 
-Notice that this is a vector of matrices, i.e. a third order tensor. While we can use this as a third order tensor, it's easier to vectorize it and treat it as a matrix.
+This was derived using equation~\ref{eq_F} for $F$. Notice that this is a vector of matrices, i.e. a third order tensor. While we can use this as a third order tensor, it's easier to vectorize it and treat it as a matrix.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Flattening Matrices and Tensors}
@@ -303,40 +306,110 @@ $vec(A) = \begin{bmatrix} vec(\begin{bmatrix} 1 & 3 \\ 2 & 4 \end{bmatrix}) & ve
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing Internal Force and the Force Jacobian (The Non-Polynomial Way)}
 
+This section is unnecessary for the cubic polynomial approach, but as with all the other sections, it's useful for debugging purposes. The internal force inside of the triangle can be computed using the equation
+
+\begin{equation}
+f = \frac{\partial \psi}{\partial u} = vec(\frac{\partial F}{\partial x})*vec(\frac{\partial \psi}{\partial F})
+\label{eq_triforce}
+\end{equation}
+
+where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_pk1}, respectively. The force jacobian for each triangle can be computed using the equation
+
+\begin{equation}
+\frac{\partial^2 \psi}{\partial u^2} = vec(\frac{\partial F}{\partial x})*\frac{\partial^2 \psi}{\partial F^2}*vec(\frac{\partial F}{\partial x})^T
+\label{eq_trijacob}
+\end{equation}
+
+where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_dpdf}. Notice how $x$, or current vertex placement, and $u$, vertex \textit{displacement}, are used interchangably here. In general, this is possible because the interal force at rest position $\bar{x}$ is $0$, and $x = \bar{x} + u$. However, it is important to note, because these will \textbf{not} be interchangable in the cubic polynomial approach.
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Creating the Triangle Mesh}
 
-An explanation of how to create a larger triangle mesh out of triangles. It is useful if this is its own
-object.
+Now that a triangle object has been established, a triangle mesh can be built. In the code for this paper, the triangle mesh is a separate object from the individual triangles, and it stores all of the triangles in a vector. When constructing the triangle mesh, it may be useful to store a map of each vertex to its global position, so that future calculations are easier. In this implementation, the following were stored as private variables:
+
+\begin{enumerate}
+  \item a vector of triangles, i.e. the triangle mesh.
+  \item a vertex to global index mapping.
+  \item a vector of vertex placements.
+  \item a vector of vertex rest positions.
+  \item a vector of vertex displacements.
+  \item a vector of vertex indices representing which vertices are \textbf{constrained}.
+  \item a vector of vertex indices representing which vertices are \textbf{unconstrained}.
+  \item a vector for inteneral force.
+  \item a vector for external force.
+  \item a mass matrix.
+  \item a vector for velocity and a vector for acceleration.
+  \item the basis reduction matrix.
+  \item a vector for the reduced basis vector.
+\end{enumerate}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementing the Euler-Lagrange Equation of Motion}
 
-An explanation of how to create a larger triangle mesh out of triangles. It is useful if this is its own
-object.
+After setting up the triangle mesh and applying some kind of external force,the system is animated by solving the Euler-Lagrange Equation of Motion. By solving equation~\ref{eq_motion}, the displacements for the next time step can be found and added to the vertex placements. In order to do this, each term of the equation must be calculated.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing Internal Force}
 
-An explanation of how to implement internal force using the StVK set up. Can be skipped for now if you are
-planning on implementing the cubic polynomial approach, but useful for debugging.
+While this step isn't necessary for the cubic polynomial approach, the methods are similar. In the previous section, the individual internal force for each triangle was calculated using equation~\ref{eq_triforce}. To calculate the global internal force, $R(u) \in \mathbb{R}^{2n}$, all of the individual internal forces are added up. This can be done by looping through every triangle, then looping through every vertex of the triangle. For each vertex, find where it belongs in the global context, and, if it is not constrained, add the force to the global vector. Here's an example through pseudocode below:
+
+\begin{algorithmic}[1]
+    \Function{globalInternalForce}{$null$}
+        \State $global\_vector.setZero()$
+        \For{triangle in triangles}
+         \State $force \gets triangle.force()$
+          \For{vertex in triangle vertices}
+              \If {vertex is unconstrained}
+                  \State $i \gets global\_index(vertex)$
+                  \State add to global vector
+              \EndIf
+            \EndFor
+        \EndFor
+    \EndFunction
+\end{algorithmic}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing the Tangent Stiffness Matrix}
 
-An explanation of how to implement the tangent stiffness matrix using the StVK set up. Can be skipped for now if you are
-planning on implementing the cubic polynomial approach, but useful for debugging.
+The process here is similar to the process of calculating the global internal force. In the previous section, the individual force jacobian for each triangle was calculated using equation~\ref{eq_trijacob}. To calculate the global stiffness matrix, $K(u) \in \mathbb{R}^{2n \times 2n}$, all of the individual force jacobians are added up. This can be done by looping through every triangle, then looping through every vertex of the triangle twice. For each vertex, find where it belongs in the global context, and, if it is not constrained, add the force to the global stiffness matrix. Here's an example through pseudocode below:
+
+\begin{algorithmic}[1]
+    \Function{globalStiffnessMatrix}{$null$}
+        \State $global\_stiffness.setZero()$
+        \For{triangle in triangles}
+         \State $jacobian \gets triangle.jacobian()$
+          \For{$vertex$ in triangle vertices}
+              \If {$vertex$ is unconstrained}
+                  \State $i \gets global\_index(vertex)$
+                  \For{$vertex_2$ in triangle vertices}
+                      \If {$vertex_2$ is unconstrained}
+                          \State $j \gets global\_index(vertex_2)$
+                          \State add to global stiffness matrix
+                      \EndIf
+                    \EndFor
+              \EndIf
+            \EndFor
+        \EndFor
+    \EndFunction
+\end{algorithmic}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing the Mass Matrix}
 
-An explanation of how to implement the mass matrix.
+The mass matrix does not change over time, so this can be initialized outside of the motion function. How mass is implemented is up to the creator.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Implementing the Damping Matrix}
+\subsection{Implementing the Damping Force}
 
-An explanation of how to implement the damping matrix.
+The damping force is calculated using the equation
+
+\begin{equation}
+D(u, \dot u) = (\alpha M + \beta K(u)) \dot u
+\label{eq_damp}
+\end{equation}
+
+After computing the global stiffness matrix, this should be straightforward. The alpha and beta values are constant values that are up to the creator, depending on how strong the desired force is.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing the Newmark Integrator}
