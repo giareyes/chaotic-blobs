@@ -94,7 +94,7 @@ specified model, and walk through every step until an actual animation is create
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{An Overview of Tensors}
 
-Before going into the details of how to implement reduced-order St. Venant-Kirchoff deformable models, it's important to review tensors, as they show up in many places throughout this paper. The following explanation is influenced by Kolda and Bader's paper on Tensor Decomposition and Applications \cite{tensors}, and contains extra findings that emerged through implementation.
+Before going into the details of how to implement reduced-order St. Venant-Kirchfoff deformable models, it's important to review tensors, as they show up in many places throughout this paper. The following explanation is influenced by Kolda and Bader's paper on Tensor Decomposition and Applications \cite{tensors}, and contains extra findings that emerged through implementation.
 
 A \textbf{tensor} is a multidimensional array. For example, a matrix is a second order tensor, and a vector is a first order tensor. An $N$th order tensor is an array of $N$ dimensions, and thus indexed using $N$ indices.
 
@@ -250,7 +250,7 @@ In computing the force jacobian of a single triangle, the energy hessian is used
 
 \begin{equation}
   \begin{split}
-\frac{\partial^2 \psi}{\partial F^2} = 4\mu [\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}] \\ + 2\lambda \frac{\partial F}{\partial F_i}tr(F^TF) - 4[\mu -\lambda]I
+\frac{\partial^2 \psi}{\partial F^2} = 4\mu [\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}] \\ + 2\lambda \frac{\partial F}{\partial F_i}tr(F^TF) - 4[\mu + \lambda]I
   \end{split}
 \label{eq_dpdf}
 \end{equation}
@@ -309,14 +309,14 @@ $vec(A) = \begin{bmatrix} vec(\begin{bmatrix} 1 & 3 \\ 2 & 4 \end{bmatrix}) & ve
 This section is unnecessary for the cubic polynomial approach, but as with all the other sections, it's useful for debugging purposes. The internal force inside of the triangle can be computed using the equation
 
 \begin{equation}
-f = \frac{\partial \psi}{\partial u} = vec(\frac{\partial F}{\partial x})*vec(\frac{\partial \psi}{\partial F})
+f = \frac{\partial \psi}{\partial u} = vec(\frac{\partial F}{\partial x})^T*vec(\frac{\partial \psi}{\partial F})
 \label{eq_triforce}
 \end{equation}
 
 where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_pk1}, respectively. The force jacobian for each triangle can be computed using the equation
 
 \begin{equation}
-\frac{\partial^2 \psi}{\partial u^2} = vec(\frac{\partial F}{\partial x})*\frac{\partial^2 \psi}{\partial F^2}*vec(\frac{\partial F}{\partial x})^T
+\frac{\partial^2 \psi}{\partial u^2} = vec(\frac{\partial F}{\partial x})^T*\frac{\partial^2 \psi}{\partial F^2}*vec(\frac{\partial F}{\partial x})
 \label{eq_trijacob}
 \end{equation}
 
@@ -445,12 +445,71 @@ Where $0 \leq \tilde{\beta} \leq 0.5$ and $0 \leq \tilde{\gamma} \leq 1$. I chos
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating Precomputed Coefficients}
 
-An explanation of how to create precomputed coefficients for the cubic polynomial approach for the unreduced problem.
+At this point in the paper, a fully function simulator of St. Venant-Kirchhoff deformable models can be created; however, they are still unreduced and lack any precomputation. If precomputation does not interest you, feel free to skip to the section titled \textbf{Generating a Deformation Basis} - after creating a deformation basis, reducing everything is as simple as following equations \ref{eq_basisreduction} - \ref{eq_rstiffness}.
+
+For simplicity, I derived the precomputed constant coefficients before reducing the equation. In order to have the ability to precompute constant coefficients, all variables must be extractable. In the case of unreduced St. Venant Kirchhoff models, this means that we should be able to separate vertex positions, $x$, out of the internal force and stiffness matrix calculation. Again, for simplicity, I began by separating $x$ from the internal force equation \ref{eq_triforce} and force jacobian equation \ref{eq_trijacob} for an individual triangle, then created global constants similar to how the global internal force and global stiffness matrix were built in sections 5.1 and 5.2.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Coefficients for the Tangent Stiffness Matrix}
 
-An explanation of how to derive the coefficients for the tangent stiffness matrix equation.
+Looking at equation~\ref{eq_dpdf}, there is clearly one quadratic term, and one constant matrix, $-4[\mu + \lambda]I$. From this, we can already derive the constant coefficient term:
+
+\begin{equation}
+  Q = - vec(\frac{\partial F}{\partial x})^T 4[\mu + \lambda]I vec(\frac{\partial F}{\partial x})
+  \label{eq_triconst}
+\end{equation}
+
+The quadratic term is trickier. Looking at the $\mu$ term of $\frac{\partial^2 \psi}{\partial F^2}$ alone, $[\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}]$ decomposes into
+
+\begin{center}
+$\frac{\partial F}{\partial F_i}F^TF = \begin{bmatrix} f_{0}^2 + f_{1}^2 & 0 & f_0f_2 + f_1f_3 & 0 \\
+0 & f_{0}^2 + f_{1}^2 & 0 & f_0f_2 + f_1f_3 \\
+f_0f_2 + f_1f_3 & 0 & f_{2}^2 + f_{3}^2 & 0 \\
+0 & f_0f_2 + f_1f_3 & 0 & f_{2}^2 + f_{3}^2 \end{bmatrix}$
+
+\bigskip
+$F\frac{\partial F}{\partial F_i}^TF = \begin{bmatrix} f_{0}^2 & f_0f_1 & f_0f_2 & f_1f_2  \\
+f_0f_1 & f_{1}^2 & f_0f_3 & f_1f_3 \\
+f_0f_2 & f_0f_3 & f_{2}^2 & f_2f_3 \\
+f_1f_2 & f_1f_3 & f_2f_3 & f_{3}^2 \end{bmatrix}$
+
+\bigskip
+$FF^T\frac{\partial F}{\partial F_i} = \begin{bmatrix} f_{0}^2 + f_{2}^2 & f_0f_1 + f_2f_3 & 0 & 0  \\
+f_0f_1 + f_2f_3 & f_{1}^2 + f_{3}^2 & 0 & 0 \\
+0 & 0 & f_{0}^2 + f_{2}^2 & f_0f_1 + f_2f_3 \\
+0 & 0 & f_0f_1 + f_2f_3 & f_{1}^2 + f_{3}^2 \end{bmatrix}$
+\end{center}
+
+In order to separate out all of the $x$'s, we can first separate all of the $f$ terms. It turns out that this can be done using tensors. By working backwards from the matrices above, a fourth order tensors, $C_{\mu}$, can be derived, such that
+
+\begin{equation}
+    C_{\mu} = \begin{bmatrix}
+    \begin{bmatrix} 3 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 2 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 1 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 2 & 0 \\ 0 & 0 & 0 & 1 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix}0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 2 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 \end{bmatrix} &
+      \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 3 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 1 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix}0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 2 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 2 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 0 & 0 & 0 & 1 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 3 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+        \begin{bmatrix}0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 2 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 1 & 0 & 0 & 0 \\ 0 & 2 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 2 & 0 \end{bmatrix} &
+          \begin{bmatrix}0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 3 \end{bmatrix} \end{bmatrix}
+\label{_eq_quadmu}
+\end{equation}
+
+And
+\begin{equation}
+\begin{split}
+4\mu[\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}] =
+\\ 4\mu C_{\mu} \times_4 vec(F) \times_3 vec(F)
+\end{split}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Constant Coefficient for the Tangent Stiffness Matrix}
