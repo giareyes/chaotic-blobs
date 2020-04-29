@@ -178,7 +178,12 @@ X \times_n A \times_n  B = X \times_n (BA)
 \label{eq_matrixModeAssociate}
 \end{equation}
 
-These two rules will also be used later.
+These two rules will also be used later. Another important rule which will be used later is, for  a tensor $X \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$, a matrix $A \in \mathbb{R}^{I_n, J}$, and a vector $b \in \mathbb{R}^{J}$,
+
+\begin{equation}
+X \bar{\times}_n (Ab) = X \times_n A^T \bar{\times}_n b
+\label{eq_productDecompose}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Creating the Triangles}
@@ -456,7 +461,7 @@ Looking at equation~\ref{eq_dpdf}, there is clearly one quadratic term, and one 
 
 \begin{equation}
   Q = - vec(\frac{\partial F}{\partial x})^T 4[\mu + \lambda]I vec(\frac{\partial F}{\partial x})
-  \label{eq_triconst}
+  \label{eq_unreducedConst}
 \end{equation}
 
 The quadratic term is trickier. Looking at the $\mu$ term of $\frac{\partial^2 \psi}{\partial F^2}$ alone, $[\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}]$ decomposes into
@@ -507,39 +512,131 @@ And
 \begin{equation}
 \begin{split}
 4\mu[\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}] =
-\\ 4\mu C_{\mu} \times_4 vec(F) \times_3 vec(F)
+\\ 4\mu C_{\mu} \bar{\times}_4 vec(F) \bar{\times}_3 vec(F)
 \end{split}
 \end{equation}
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Constant Coefficient for the Tangent Stiffness Matrix}
+Similar to the $\mu$ term, the $\lambda$ term, which can be split into the two terms:
 
-An explanation of how to derive the constant coefficient for the tangent stiffness matrix.
+\begin{center}
+  $2\lambda (\frac{\partial F}{\partial F_i}tr(F^TF)  = 2\lambda(f_{0}^2 + f_{1}^2 + f_{2}^2  + f_{3}^2) \begin{bmatrix}
+  1 & 0 & 0 & 0  \\
+  0 & 1  & 0 & 0 \\
+  0 & 0 & 1  & 0 \\
+  0 & 0 & 0 & 1  \end{bmatrix}$
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Quadratic Coefficient for the Tangent Stiffness Matrix}
+  \bigskip
+  $2\lambda (F\frac{\partial tr(F^TF)}{\partial F_i})  = 2\lambda \begin{bmatrix}
+  2f_{0}^2 & 2f_0f_1 & 2f_0f_2 & 2f_0f_3  \\
+  2f_0f_1 & 2f_{1}^2 & 2f_1f_2 & 2f_1f_3 \\
+  2f_0f_2 & 2f_1f_2 & 2f_{2}^2 & 2f_2f_3 \\
+  2f_0f_3 & 2f_1f_3 & 2f_2f_3 & 2f_{3}^2  \end{bmatrix}$
+\end{center}
 
-An explanation of how to derive the quadratic coefficient for the tangent stiffness matrix.
+has a fourth order tensors that can be derived:
+
+\begin{equation}
+    C_{\lambda} = \begin{bmatrix}
+    \begin{bmatrix} 3 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+    \begin{bmatrix} 0 & 2 & 0 & 0 \\ 2 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 2 & 0 \\ 0 & 0 & 0 & 0 \\ 2 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix}0 & 0 & 0 & 2 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 2 & 0 & 0 & 0 \end{bmatrix} \\
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 3 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 2 & 0 \\ 0 & 2 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix}0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 2 \\ 0 & 0 & 0 & 0 \\ 0 & 2 & 0 & 0 \end{bmatrix} \\
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 3 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+        \begin{bmatrix}0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 2 \\ 0 & 0 & 2 & 0 \end{bmatrix} \\
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix}1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 3 \end{bmatrix} \end{bmatrix}
+\label{_eq_quadlambda}
+\end{equation}
+
+And
+\begin{equation}
+2\lambda[\frac{\partial F}{\partial F_i}tr(F^TF) + F\frac{\partial tr(F^TF)}{\partial F_i}] = 2\lambda C_{\lambda} \bar{\times}_4 vec(F) \bar{\times}_3 vec(F)
+\end{equation}
+
+So the entire quadratic term can be written as
+
+\begin{equation}
+C_f \bar{\times}_4 vec(F) \bar{\times}_3 vec(F) =  (4\mu C_{\mu} + 2\lambda C_{\lambda}) \bar{\times}_4 vec(F) \bar{\times}_3 vec(F)
+\end{equation}
+
+This still only separates $F$, not $x$. However, since $F = \frac{\partial F}{\partial x}x$, we can rearrange this equation using our tensor product rules (equations~\ref{eq_vectorMode}-\ref{eq_productDecompose}) so that
+\begin{center}
+  \begin{multline}
+  C_f \bar{\times}_4 vec(F) \bar{\times}_3 vec(F) = C_f \bar{\times}_4 vec( \frac{\partial F}{\partial x}x) \bar{\times}_3 vec( \frac{\partial F}{\partial x}x)
+  \\ = C_f \bar{\times}_4 vec( \frac{\partial F}{\partial x}) vec(x) \bar{\times}_3 vec( \frac{\partial F}{\partial x}) vec(x)
+  \\ = C_f \times_4 vec( \frac{\partial F}{\partial x})^T \bar{\times}_4 vec(x) \times_3 vec( \frac{\partial F}{\partial x})^T \bar{\times}_3 vec(x)
+  \\ = [C_f \times_4 vec( \frac{\partial F}{\partial x})^T \times_3 vec( \frac{\partial F}{\partial x})^T] \bar{\times}_4 vec(x) \bar{\times}_3 vec(x)
+\end{multline}
+\end{center}
+
+Since $\frac{\partial F}{\partial x}$ is constant (refer back to equation~\ref{eq_dFdx}), this can be pushed into our constant, so that our final quadratic constant can be written as
+
+\begin{equation}
+C  = C_f \times_4 vec( \frac{\partial F}{\partial x})^T \times_3 vec( \frac{\partial F}{\partial x})^T
+\label{eq_unreducedQuad}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Tangent Stiffness Matrix Coefficients}
 
-An explanation of how to derive the global tangent stiffness matrix.
+Now that the constant terms for the force jacobian for each triangle has been computed, we can create global constant terms for the tangent stiffness matrix in a similar way manner as how the global tangent stiffness matrix was computed earlier.
+
+\begin{algorithmic}[1]
+    \Function{globalStiffnessConstants}{$null$}
+        \State $Q_{global}.setZero()$
+        \State $C_{global}.setZero()$
+        \For{triangle in triangles}
+         \State $Q \gets triangle.getQ()$
+         \State $C \gets triangle.getC()$
+          \For{$vertex$ in triangle vertices}
+              \If {$vertex$ is unconstrained}
+                  \State $i \gets global\_index(vertex)$
+                  \For{$vertex_2$ in triangle vertices}
+                      \If {$vertex_2$ is unconstrained}
+                          \State $j \gets global\_index(vertex_2)$
+                          \State $Q_{global}(i,j) \gets Q_{global}(i,j) + Q(vertex, vertex_2)$
+                          \For{$vertex_3$ in triangle vertices}
+                                \State $k \gets global\_index(vertex_3)$
+                                \For{$vertex_4$ in triangle vertices}
+                                    \State $l \gets global\_index(vertex_4)$
+                                    \State $C_{global}(i,j,k,l)  \gets C_{global}(i,j,k,l)+C(vertex, vertex_2, vertex_3, vertex_4)$
+                                  \EndFor
+                            \EndFor
+                      \EndIf
+                    \EndFor
+              \EndIf
+            \EndFor
+        \EndFor
+    \EndFunction
+\end{algorithmic}
+
+Note that the global coefficients match the order of the triangle coefficients; that is, the constant term, $Q_{global}$ is a matrix, while the global coefficient for the quadratic term, $C_{global}$, is a fourth-order tensor. The difference is in their dimensions; while $Q \in \mathbb{R}^{6 \times 6}$, $Q_{global} \in \mathbb{R}^{2n \times 2n}$, and while  $C \in \mathbb{R}^{6 \times 6 \times 6 \times 6}$, $C_{global} \in \mathbb{R}^{2n \times 2n \times 2n \times 2n}$.
+
+Also note that this pseudocode is abbreviated; while it only shows adding $C$ and $Q$ to one position in the global coefficients, you actually have to add it to every possible combination of the current vertices's $x$ and $y$ coordinates. For example, if $vertex$ and $vertex_2$ are unconstrained, then
+
+\begin{center}
+$Q_{global}(i,j) += Q(vertex(x), vertex_2(x))$,
+
+$Q_{global}(i + 1,j) += Q(vertex(y), vertex_2(x))$,
+
+$Q_{global}(i ,j + 1) += Q(vertex(x), vertex_2(y))$, and
+
+$Q_{global}(i + 1,j + 1) += Q(vertex(y), vertex_2(y))$.
+\end{center}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Coefficients for Internal Force}
 
-An explanation of how to derive the coefficients for the internal force equation.
+Looking at equation~\ref{eq_pk1}, there is clearly one cubic term, and one linear term. Since the force jacobian is the derivative of internal force, the linear coefficient for internal force is actually also $Q$. The connection between the cubic term and the quadratic term, however, is not as clean, because the cubic term can be reduced into a fourth order tensor as well.
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Linear Coefficient for Internal Force}
-
-An explanation of how to derive the linear coefficient for internal force.
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Cubic Coefficient for for Internal Force}
-
-An explanation of how to derive the cubic coefficient for internal force.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Internal Force Coefficients}
@@ -593,160 +690,6 @@ Thanks to Barbič for writing the paper and my advisor Theodore Kim.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Footnotes\protect\footnotemark}
-% \footnotetext{Examine the input file, asme2ej.tex, to see how a footnote is given in a head.}
-%
-% Footnotes are referenced with superscript numerals and are numbered consecutively from 1 to the end of the paper\footnote{Avoid footnotes if at all possible.}. Footnotes should appear at the bottom of the column in which they are referenced.
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Mathematics}
-%
-% Equations should be numbered consecutively beginning with (1) to the end of the paper, including any appendices.  The number should be enclosed in parentheses and set flush right in the column on the same line as the equation.  An extra line of space should be left above and below a displayed equation or formula. \LaTeX\ can automatically keep track of equation numbers in the paper and format almost any equation imaginable. An example is shown in Eqn.~(\ref{eq_ASME}). The number of a referenced equation in the text should be preceded by Eqn.\ unless the reference starts a sentence in which case Eqn.\ should be expanded to Equation.
-%
-% \begin{equation}
-% f(t) = \int_{0_+}^t F(t) dt + \frac{d g(t)}{d t}
-% \label{eq_ASME}
-% \end{equation}
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Figures}
-% \label{sect_figure}
-%
-% All figures should be positioned at the top of the page where possible.  All figures should be numbered consecutively and centered under the figure as shown in Fig.~\ref{figure_ASME}. All text within the figure should be no smaller than 7~pt. There should be a minimum two line spaces between figures and text. The number of a referenced figure or table in the text should be preceded by Fig.\ or Tab.\ respectively unless the reference starts a sentence in which case Fig.\ or Tab.\ should be expanded to Figure or Table.
-%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
-% \begin{figure}[t]
-% \begin{center}
-% \setlength{\unitlength}{0.012500in}%
-% \begin{picture}(115,35)(255,545)
-% \thicklines
-% \put(255,545){\framebox(115,35){}}
-% \put(275,560){Beautiful Figure}
-% \end{picture}
-% \end{center}
-% \caption{The caption of a single sentence does not have period at the end}
-% \label{figure_ASME}
-% \end{figure}
-% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% In the following subsections, I have inserted figures that have been provided by authors in order to demonstrate what to avoid.  In each case the authors provided figures that are 3.25in wide and 600dpi in the .tif graphics format.  The papers containing these figures have been held from production due to their poor quality.
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \subsection{The 1st Example of Bad Figure}
-%
-% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
-% %%% 3.34in is the maximum width you can have for a figure
-% \begin{figure}
-% \centerline{\psfig{figure=figure/FMANU_MD_05_1107_11.ps,width=3.34in}}
-% \caption{Example taken from a paper that was held from production because the image quality is poor.  ASME sets figures captions in 8pt, Helvetica Bold.}
-% \label{fig_example1.ps}
-% \end{figure}
-% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
-%
-% In order to place the figure in this template using MSWord, select ����Insert Picture from File,���� and use wrapping that is  ����top and bottom.����  Make sure the figure is 3.25in wide.
-%
-% Figure~`\ref{fig_example1.ps}
-% was taken from a recent paper that was held from publication, because the text is fuzzy and unreadable.  It was probably obtained by taking a screen shot of the computer output of the author����s software.  This means the original figure was 72dpi (dots per inch) on a computer screen.  There is no way to improve the quality such a low resolution figure.
-%
-% In order to understand how poor the quality of this figure is, please zoom in slightly, say to 200\%.  Notice that while the font of the paper is clear at this size, the font in the figures is fuzzy and blurred.  It is impossible to make out the small symbol beside the numbers along the abscissa of the graph.  Now consider the labels ����Time���� and ����Cost.����  They are clearly in fonts larger that the text of the article, yet the pixilation or rasterization, associated with low resolution is obvious. This figure must be regenerated at higher resolution to ensure quality presentation.
-%
-% The poor quality of this figure is immediately obvious on the printed page, and reduces the impact of the research contribution of the paper, and in fact detracts from the perceived quality of the journal itself.
-%
-%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \subsection{The 2nd Example of Bad Figure}
-%
-% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
-% \begin{figure}
-% \centerline{\psfig{figure=figure/FMANU_MD_05_1272_5.ps,width=3.34in}}
-% \caption{While this figures is easily readable at a double column width of 6.5in, when it is shrunk to 3.25in column width the text is unreadable.   This paper was held from production.}
-% \label{fig_example2.ps}
-% \end{figure}
-% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
-%
-% Figure~\ref{fig_example2.ps}
-% demonstrates a common problem that arises when a figure is scaled down fit a single column width of 3.25in.  The original figure had labels that were readable at full size, but become unreadable when scaled to half size.  This figure also suffers from poor resolution as is seen in the jagged lines the ovals that form the chain.
-%
-% This problem can be addressed by increasing the size of the figure to a double column width of 6.5in, so the text is readable.  But this will not improve the line pixilation, and a large low resolution figure is less desirable than a small one.  This also significantly expands the length of the paper, and may cause it to exceed the JMD nine page limit.  Additional pages require page charges of \$200 per page.  It is best to regenerate the figure at the resolution that ensures a quality presentation.
-%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \subsection{The 3rd Example of Bad Figure}
-% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
-% \begin{figure}
-% %\centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=3.34in}}
-% \centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=3.25in}}
-% \caption{Another example of a figure with unreadable text.  Even when the paper was expanded to double column width the text as shown in Fig.~\ref{fig_example4.ps} was of such low quality that the paper was held from production.}
-% \label{fig_example3.ps}
-% \end{figure}
-% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
-%
-% %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
-% %%% the maximum width in double column is 6.85in
-% \begin{figure*}
-% \centerline{\psfig{figure=figure/FMANU_MD_04_1274_13.ps,width=6.85in}}
-% \caption{A figure expanded to double column width the text from Figure~\ref{fig_example3.ps}}
-% \label{fig_example4.ps}
-% \end{figure*}
-% %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
-% An author provided the high resolution image
-% in Fig.~\ref{fig_example3.ps}
-% that was sized to a single column width of 3.25in.  Upon seeing the poor quality of the text, the publisher scaled the image to double column width as shown in Fig.~\ref{fig_example4.ps}
-% at which point it took half of a page.  The publisher went on to do this for all eight figures generating four pages of figures that the author did not expect. ASME stopped production of the paper even with the larger figures due to the pixilation of the font.
-%
-% Clearly the text in this figure is unreadable, and it is doubtful that the author can print the output in a way that it is readable.  This is a problem that the author must solve, not the publisher.
-%
-% As you might expect, I have many more examples, but in the end the author is the best judge of what is needed in each figure.  ASME simply requires that the image meet a minimum standard for font and line quality, specifically the font should be the appropriate size and not be blurred or pixilated, and that lines should be the appropriate weight and have minimal, preferably no, pixilation or rasterization.
-%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Tables}
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%% begin table   %%%%%%%%%%%%%%%%%%%%%%%%%%
-% \begin{table}[t]
-% \caption{Figure and table captions do not end with a period}
-% \begin{center}
-% \label{table_ASME}
-% \begin{tabular}{c l l}
-% & & \\ % put some space after the caption
-% \hline
-% Example & Time & Cost \\
-% \hline
-% 1 & 12.5 & \$1,000 \\
-% 2 & 24 & \$2,000 \\
-% \hline
-% \end{tabular}
-% \end{center}
-% \end{table}
-% %%%%%%%%%%%%%%%% end table %%%%%%%%%%%%%%%%%%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% All tables should be numbered consecutively  and centered above the table as shown in Table~\ref{table_ASME}. The body of the table should be no smaller than 7 pt.  There should be a minimum two line spaces between tables and text.
-%
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Citing References}
-%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% The ASME reference format is defined in the authors kit provided by the ASME.  The format is:
-%
-% \begin{quotation}
-% {\em Text Citation}. Within the text, references should be cited in  numerical order according to their order of appearance.  The numbered reference citation should be enclosed in brackets.
-% \end{quotation}
-%
-%
-% The bibliography style required by the ASME is unsorted with entries appearing in the order in which the citations appear. If that were the only specification, the standard {\sc Bib}\TeX\ unsrt bibliography style could be used. Unfortunately, the bibliography style required by the ASME has additional requirements (last name followed by first name, periodical volume in boldface, periodical number inside parentheses, etc.) that are not part of the unsrt style. Therefore, to get ASME bibliography formatting, you must use the \verb+asmems4.bst+ bibliography style file with {\sc Bib}\TeX. This file is not part of the standard BibTeX distribution so you'll need to place the file someplace where LaTeX can find it (one possibility is in the same location as the file being typeset).
-%
-% With \LaTeX/{\sc Bib}\TeX, \LaTeX\ uses the citation format set by the class file and writes the citation information into the .aux file associated with the \LaTeX\ source. {\sc Bib}\TeX\ reads the .aux file and matches the citations to the entries in the bibliographic data base file specified in the \LaTeX\ source file by the \verb+\bibliography+ command. {\sc Bib}\TeX\ then writes the bibliography in accordance with the rules in the bibliography .bst style file to a .bbl file which \LaTeX\ merges with the source text.  A good description of the use of {\sc Bib}\TeX\ can be found in \cite{latex, goosens} (see how two references are handled?).  The following is an example of how three or more references \cite{latex, asmemanual,  goosens} show up using the \verb+asmems4.bst+ bibliography style file in conjunction with the \verb+asme2ej.cls+ class file. Here are some more \cite{art, blt, ibk, icn, ips, mts, mis, pro, pts, trt, upd} which can be used to describe almost any sort of reference.
-%
-
 % Here's where you specify the bibliography style file.
 % The full file name for the bibliography style file
 % used for an ASME paper is asmems4.bst.
@@ -757,5 +700,23 @@ Thanks to Barbič for writing the paper and my advisor Theodore Kim.
 % article is asme2e.bib. The name for your database is up
 % to you.
 \bibliography{writeup}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \appendix       %%% starting appendix
+% \section*{Appendix A: Head of First Appendix}
+% \begin{center}
+%   $2\lambda (\frac{\partial F}{\partial F_i}tr(F^TF)  = 2\lambda(f_{0}^2 + f_{1}^2 + f_{2}^2  + f_{3}^2) \begin{bmatrix}
+%   1 & 0 & 0 & 0  \\
+%   0 & 1  & 0 & 0 \\
+%   0 & 0 & 1  & 0 \\
+%   0 & 0 & 0 & 1  \end{bmatrix}$
+%
+%   \bigskip
+%   $2\lambda (F\frac{\partial tr(F^TF)}{\partial F_i})  = 2\lambda \begin{bmatrix}
+%   2f_{0}^2 & 2f_0f_1 & 2f_0f_2 & 2f_0f_3  \\
+%   2f_0f_1 & 2f_{1}^2 & 2f_1f_2 & 2f_1f_3 \\
+%   2f_0f_2 & 2f_1f_2 & 2f_{2}^2 & 2f_2f_3 \\
+%   2f_0f_3 & 2f_1f_3 & 2f_2f_3 & 2f_{3}^2  \end{bmatrix}$
+% \end{center}
 
 \end{document}
