@@ -97,11 +97,84 @@ A \textbf{tensor} is a multidimensional array. For example, a matrix is a second
 %%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
 %%% 3.34in is the maximum width you can have for a figure
 \begin{figure}
-\centerline{\includegraphics[keepaspectratio,width=3.34in, natwidth = 1570, natheight = 552]{figure/fig1.png}}
-\caption{Example taken from a paper that was held from production because the image quality is poor.  ASME sets figures captions in 8pt, Helvetica Bold.}
+\center{\includegraphics[keepaspectratio,width=4.8in, natwidth = 1570, natheight = 552]{figure/fig1.png}}
+\caption{A visual representation of a third order tensor. It can be imagined in three distinct ways, depending on how you index it}
 \label{fig_ex1.png}
 \end{figure}
 %%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+%%% 3.34in is the maximum width you can have for a figure
+\begin{figure}
+\center{\includegraphics[keepaspectratio,width=4.8in, natwidth = 1828, natheight = 558]{figure/fig2.png}}
+\caption{A visual representation of a fourth order tensor. In code, it is treated as a vector of third order tensors.}
+\label{fig_ex2.png}
+\end{figure}
+%%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+
+Figure~\ref{fig_ex1.png} shows a visual representation of a third order tensor; it can be imagined as a vector of matrices, where each square slice represents an individual matrix. Figure~\ref{fig_ex2.png} shows a visual representation of a fourth
+order tensor, or a vector of third order tensors. Fourth order tensors are the highest dimension tensor needed for this paper, so no other tensor visuals are included.
+
+There are three different kinds of tensor multiplication that we will use throughout this paper.
+
+\subsection{Scalar Multiplication}
+
+This works exactly as it seems like it would. For $a \in \mathbb{R}$, $X \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$,
+
+\begin{equation}
+(aX)_{i_1, i_2, ..., i_n} = a*x_{i_1, i_2, ..., i_n}
+\end{equation}
+
+%%%%%%%%%%%%%%%% begin figure %%%%%%%%%%%%%%%%%%%
+%%% 3.34in is the maximum width you can have for a figure
+\begin{figure}
+\center{\includegraphics[keepaspectratio,width=4.8in, natwidth = 1774, natheight = 788]{figure/fig3.png}}
+\caption{A visual representation of a 3-mode vector product, where $A \in \mathbb{R}^{n \times n \times 4}$ and $f \in \mathbb{R}^{4}$}
+\label{fig_ex3.png}
+\end{figure}
+%%%%%%%%%%%%%%%% end figure %%%%%%%%%%%%%%%%%%%
+
+\subsection{n-Mode Vector Product}
+
+When a tensor is multiplied by a vector, its order reduces by 1. An n-mode vector product of a tensor $X \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a vector $v \in \mathbb{R}^{I_n}$ is denoted by $X \bar{\times}_n v$. Elementwise,
+
+\begin{equation}
+(X \bar{\times}_n v )_{i_1, ..., i_{n-1}, i{n+1}, ..., i_N} = \sum_{i_n = 1}{I_n} x_{i_1, i_2, ..., i_N}*v_{i_n}
+\end{equation}
+
+So the resulting tensor $(X \bar{\times}_n v ) \in \mathbb{R}^{I_1 \times ... \times I_{n-1} \times I_{n+1} \times ... \times I_N}$. A visual representation of a 3-mode vector product can be seen in Figure~\ref{fig_ex3.png}.
+For n-mode vector products, precedence matters, since it change which dimension of the tensor is collapsed. Therefore, if $m < n$,
+
+\begin{equation}
+X \bar{\times}_m a \bar{\times}_n b = (X \bar{\times}_m a) \bar{\times}_{n-1} b = (X \bar{\times}_n b) \bar{\times}_m a
+\label{eq_vectorMode}
+\end{equation}
+
+This is an important rule that will be used later.
+
+\subsection{n-Mode Matrix Product}
+When a tensor is multiplied by a matrix, one of its dimensions changes. An n-mode matrix product of a tensor $X \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a matrix $U \in \mathbb{R}^{J \times I_n}$ is denoted by $X \times_n U$. Elementwise, this multiplication results in:
+
+\begin{equation}
+(X \times_n U )_{i_1, ..., i_{n-1}, j, i{n+1}, ..., i_N} = \sum_{i_n = 1}{I_n} x_{i_1, i_2, ..., i_N}*u_{j,i_n}
+\end{equation}
+
+and the resulting tensor $(X \times_n U ) \in \mathbb{R}^{I_1 \times ... \times I_{n-1} \times J \times I_{n+1} \times ... \times I_N}$.
+
+If $n \neq m$, then
+
+\begin{equation}
+X \times_n A \times_m  B = X \times_m B \times_n A
+\label{eq_matrixModeCommute}
+\end{equation}
+
+If the modes are the same, then
+
+\begin{equation}
+X \times_n A \times_n  B = X \times_n (BA)
+\label{eq_matrixModeAssociate}
+\end{equation}
+
+These two rules will also be used later.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Creating the Triangles}
