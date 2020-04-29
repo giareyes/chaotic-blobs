@@ -400,12 +400,12 @@ The process here is similar to the process of calculating the global internal fo
 The mass matrix does not change over time, so this can be initialized outside of the motion function. How mass is implemented is up to the creator.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Implementing the Damping Force}
+\subsection{Implementing the Damping Matrix}
 
-The damping force is calculated using the equation
+The damping matrix is calculated using the equation
 
 \begin{equation}
-D(u, \dot u) = (\alpha M + \beta K(u)) \dot u
+D(u) = (\alpha M + \beta K(u))
 \label{eq_damp}
 \end{equation}
 
@@ -414,7 +414,33 @@ After computing the global stiffness matrix, this should be straightforward. The
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing the Newmark Integrator}
 
-An explanation of how to take a step in time.
+After calculating all of the individual terms in the Euler-Lagrange equation of motion, the equation can be solved for a given timestep using an implicit Newmark integrator. Implicit Newmark integrators are second-order accurate, and they only require one step, instead of having to solve the equation in a few iterations. While the pseudocode below is written for unreduced displacements, this iteration stays exactly the same when $u$ is replaced with $q$.
+
+\begin{algorithmic}[1]
+    \Function{NewmarkIntegrator}{$null$}
+      \State $u_{i + 1} \gets u_i$
+      \State Evaluate internal forces $R(u_i)$
+      \State Evaluate the stiffness matrix $K(u_i)$
+      \State Calculate the damping matrix, $D(u_i) = \alpha M + \beta K$
+      \State Calculate the system matrix, $A = \alpha_1M + \alpha_4D(u_i) - K$
+      \State residual $\gets (\alpha_3M - \alpha_6D)\ddot u_{i} + (\alpha_2M - \alpha_5D)\dot u_{i} + R(u_i) + f_{i+1}$
+      \State $ \Delta u \gets A^{-1} *$ residual
+      \State $ u_{i + 1} \gets u_{i + 1} + \Delta u$
+      \State $ \dot u_{i + 1} \gets \alpha_4(u_{i+1} - u_i) + \alpha_5 \dot u_i + \alpha_6 \ddot u_i$
+      \State $ \ddot u_{i + 1} \gets \alpha_1(u_{i+1} - u_i) - \alpha_2 \dot u_i - \alpha_3 \ddot u_i$
+    \EndFunction
+\end{algorithmic}
+
+The alpha constants in this integrator are determined by the equations
+
+\begin{center}
+$\alpha_1 = \frac{1}{\tilde{\beta}(\Delta t)^2}, \alpha_2 = \frac{1}{\tilde{\beta}\Delta t},
+\alpha_3 = \frac{1 - 2\tilde{\beta}}{2\tilde{\beta}}, \alpha_4 = \frac{\tilde{\gamma}}{\tilde{\beta}\Delta t},$
+
+$\alpha_5 = 1 - \frac{\tilde{\gamma}}{\tilde{\beta}}, \alpha_6 = (1 - \frac{\tilde{\gamma}}{2\tilde{\beta}})\Delta t$
+\end{center}
+
+Where $0 \leq \tilde{\beta} \leq 0.5$ and $0 \leq \tilde{\gamma} \leq 1$. I chose $\tilde{\beta} = 0.25$ and $\tilde{\gamma} = 0.5$ for this implementation, but Barbič and James chose $\tilde{\beta} = 0$ and $\tilde{\gamma} = 0.5$.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating Precomputed Coefficients}
