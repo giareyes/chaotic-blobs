@@ -1,6 +1,7 @@
 %%% use twocolumn and 10pt options with the asme2ej format
 \documentclass[twocolumn,10pt]{asme2ej}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \usepackage{epsfig} %% for loading postscript figures
 \usepackage{graphicx}
 
@@ -213,11 +214,11 @@ When a solid is deformed, the \textbf{Deformation Gradient}, $F \in \mathbb{R}^{
 The deformation gradient can be found using the equation:
 
 \begin{equation}
-F = D_sD_{m}^{-1}
-\label{eq_stvk}
+F = D_sD_{m}^{-1} = \begin{bmatrix} (x_2 - x_0) & (x_4 - x_0) \\ (x_3 - x_1) & (x_5 - x_1) \end{bmatrix} D_{m}^{-1} = \begin{bmatrix} f_0 & f_2 \\ f_1 & f_3 \end{bmatrix}
+\label{eq_F}
 \end{equation}
 
-Where $D_s$ is the spatial matrix made of the deformed vertices, and $D_m$ is the material matrix made of the rest vertices.
+Where $D_s$ is the spatial matrix made of the deformed vertices, $D_m$ is the material matrix made of the rest vertices, and the three vertices of the triangle are $(x_0, x_1), (x_2, x_3), (x_4, x_5)$. Since the rest vertices stay constant throughout the simulation, $D_{m}^{-1}$ is constant.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing StVK}
@@ -235,7 +236,21 @@ A St. Venant-Kirchhoff deformable model is defined by the StVK strain energy, wh
 
 , and $\lambda$ and $\mu$ are Lamé coefficients.
 
-In computing the internal force of a single triangle, the Piola-Kirchhoff stress tensor
+In computing the internal force of a single triangle, the Piola-Kirchhoff stress tensor, i.e. the derivative of the strain energy by the deformation gradient, is used. The Piola-Kirchhoff stress tensor is
+
+\begin{equation}
+\frac{\partial \psi}{\partial F} = 4\mu FF^TF - 4\mu F + 2\lambda Ftr(F^TF) -4\lambda F
+\label{eq_pk1}
+\end{equation}
+
+In computing the force jacobian of a single triangle, the energy hessian is used. The energy hessian is:
+
+\begin{equation}
+  \begin{split}
+\frac{\partial^2 \psi}{\partial F^2} = 4\mu [\frac{\partial F}{\partial F_i}F^TF + F\frac{\partial F}{\partial F_i}^TF + FF^T\frac{\partial F}{\partial F_i}] \\ + 2\lambda \frac{\partial F}{\partial F_i}tr(F^TF) - 4[\mu -\lambda]I
+  \end{split}
+\label{eq_dpdf}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing dF/dx}
