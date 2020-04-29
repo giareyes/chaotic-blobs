@@ -410,7 +410,7 @@ The mass matrix does not change over time, so this can be initialized outside of
 The damping matrix is calculated using the equation
 
 \begin{equation}
-\bm{D}(\bm{u}) = \left(\alpha \bm{M} + \beta \bm{K}(\bm{u})\right)
+\bm{D}(\bm{u}) = \left(\alpha \bm{M} - \beta \bm{K}(\bm{u})\right)
 \label{eq_damp}
 \end{equation}
 
@@ -426,7 +426,7 @@ After calculating all of the individual terms in the Euler-Lagrange equation of 
       \State $\bm{u_{i + 1}} \gets \bm{u_i}$
       \State Evaluate internal forces $\bm{R}(\bm{u_i})$
       \State Evaluate the stiffness matrix $\bm{K}(\bm{u_i})$
-      \State Calculate the damping matrix, $\bm{D}(\bm{u_i}) = \alpha \bm{M} + \beta \bm{K}$
+      \State Calculate the damping matrix, $\bm{D}(\bm{u_i}) = \alpha \bm{M} - \beta \bm{K}$
       \State Calculate the system matrix, $\bm{A} = \alpha_1\bm{M} + \alpha_4\bm{D}(\bm{u_i}) - \bm{K}$
       \State residual $\gets (\alpha_3\bm{M} - \alpha_6\bm{D}) \bm{ \ddot u_i} + (\alpha_2\bm{M} - \alpha_5\bm{D}) \bm{ \dot u_{i}} + \bm{R}(\bm{u_i}) + \bm{f_{i+1}}$
       \State $ \Delta \bm{u} \gets \bm{A^{-1}} \cdot $ residual
@@ -485,7 +485,7 @@ f_0f_1 + f_2f_3 & f_{1}^2 + f_{3}^2 & 0 & 0 \\
 0 & 0 & f_0f_1 + f_2f_3 & f_{1}^2 + f_{3}^2 \end{bmatrix}$
 \end{center}
 
-In order to separate out all of the $\bm{x}$'s, we can first separate all of the $\bm{f}$ terms. It turns out that this can be done using tensors. By working backwards from the matrices above, a fourth order tensors, $\bm{C_{\mu}}$, can be derived, such that
+In order to separate out all of the $\bm{x}$'s, we can first separate all of the $\bm{f}$ terms. It turns out that this can be done using tensors. By working backwards from the matrices above, a fourth order tensor, $\bm{C_{\mu}}$, can be derived, such that
 
 \begin{equation}
     \bm{C_{\mu}} = \begin{bmatrix}
@@ -561,7 +561,7 @@ And
 2\lambda \left[\frac{\partial \bm{F}}{\partial F_i}\tr \left(\bm{F^TF}\right) + \bm{F}\frac{\partial \tr \left(\bm{F^TF}\right)}{\partial F_i} \right] = 2\lambda \bm{C_{\lambda}} \bar{\times}_4 \vect (\bm{F}) \bar{\times}_3 \vect (\bm{F})
 \end{equation}
 
-So the entire quadratic term can be written as
+So the entire quadratic term of equation~\ref{eq_dpdf} can be written as
 
 \begin{multline}
 \bm{C_f} \bar{\times}_4 \vect (\bm{F}) \bar{\times}_3 \vect (\bm{F}) =  \\ \left(4\mu \bm{C_{\mu}} + 2\lambda \bm{C_{\lambda}}\right) \bar{\times}_4 \vect (\bm{F}) \bar{\times}_3 \vect (\bm{F})
@@ -577,17 +577,23 @@ This still only separates $\bm{F}$, not $\bm{x}$. However, since $\bm{F} = \frac
 \end{multline}
 \end{center}
 
-Since $\frac{\partial \bm{F}}{\partial \bm{x}}$ is constant (refer back to equation~\ref{eq_dFdx}), this can be pushed into our constant, so that our final quadratic constant can be written as
+Since $\frac{\partial \bm{F}}{\partial \bm{x}}$ is constant (refer back to equation~\ref{eq_dFdx}), this can be pushed into our constant, so that our equation~\ref{eq_dpdf} quadratic constant can be written as
 
 \begin{equation}
-\bm{C}  = \bm{C_f} \times_4 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)^T \times_3 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}}\right)^T
-\label{eq_unreducedQuad}
+\bm{C_{dpdf}}  = \bm{C_f} \times_4 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)^T \times_3 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}}\right)^T
 \end{equation}
+
+This constant is still for equation~\ref{eq_dpdf}, not the force jacobian. The only step left in calculating the triangle force jacobian's quadratic coefficient is to multiply it on both sides by $\left(\frac{\partial \bm{F}}{\partial \bm{x}}\right)$:
+
+\begin{multline}
+\bm{C}  = \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)^T \bm{C_{dpdf}} \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)
+\\ = \bm{C_{dpdf}} \times_2 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)^T \times_1 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}}\right)^T
+\end{multline}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Tangent Stiffness Matrix Coefficients}
 
-Now that the constant terms for the force jacobian for each triangle has been computed, we can create global constant terms for the tangent stiffness matrix in a similar way manner as how the global tangent stiffness matrix was computed earlier.
+Now that the constant terms for the force jacobian for each triangle has been computed, we can create global constant terms for the tangent stiffness matrix in a similar manner as how the global tangent stiffness matrix was computed earlier.
 
 \begin{algorithmic}[1]
     \Function{globalStiffnessConstants}{$null$}
@@ -635,13 +641,139 @@ $\bm{Q_{global}}(i + 1,j + 1) += \bm{Q}(vertex(y), vertex_2(y))$.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Coefficients for Internal Force}
 
-Looking at equation~\ref{eq_pk1}, there is clearly one cubic term, and one linear term. Since the force jacobian is the derivative of internal force, the linear coefficient for internal force is actually also $Q$. The connection between the cubic term and the quadratic term, however, is not as clean, because the cubic term can be reduced into a fourth order tensor as well.
+Looking at equation~\ref{eq_pk1}, there is clearly one cubic term and one linear term. Since the force jacobian is the derivative of internal force, the linear coefficient for internal force is actually also $\bm{Q}$ (eq \ref{eq_unreducedConst}). The connection between the cubic term and the quadratic term, however, is not as clean, because the cubic term can be reduced into a fourth order tensor as well. We are able to reduce the coefficient for the cubic term into a fourth order tensor because equation~\ref{eq_pk1} is vectorized, reducing its order by one.
 
+The vectorized cubic term, before separating $\bm{x}$, is
+
+\begin{center}
+  $\vect \left( 4\mu\bm{FF^TF} + 2\lambda\tr\left(\bm{F^TF}\right)\bm{F}\right)$
+\end{center}
+
+where
+
+\begin{center}
+  $\vect \left( 4\mu\bm{FF^TF} \right) = 4\mu
+  \begin{bmatrix}
+    f_{0}^3 + f_0f_{1}^2 + f_0f_{2}^2 + f_1f_2f_3 \\
+    f_{0}^2f_{1} + f_{1}^3 + f_0f_2f_3 + f_1f_{3}^2 \\
+    f_{0}^2f_{2} + f_0f_1f_3 + f_{2}^3 + f_2f_{3}^2 \\
+    f_0f_1f_2 + f_{1}^2f_3 + f_{2}^2f_3 + f_{3}^3 \\
+    \end{bmatrix}$
+
+    \bigskip
+    $\vect \left( 2\lambda\tr\left(\bm{F^TF}\right)\bm{F} \right) = 2\lambda
+    \begin{bmatrix}
+      f_{0}^3 + f_0f_{1}^2 + f_0f_{2}^2 + f_0f_{3}^2 \\
+      f_{0}^2f_1 + f_{1}^3 + f_1f_{2}^2 + f_1f_{3}^2 \\
+      f_{0}^2f_2 + f_2f_{1}^2 + f_{2}^3 + f_2f_{3}^2 \\
+      f_{0}^2f_3 + f_3f_{1}^2 + f_3f_{2}^2 + f_{3}^3\\
+      \end{bmatrix}$
+\end{center}
+
+In order to separate out all of the $\bm{x}$'s, we can first separate all of the $\bm{f}$ terms, like we did for the force jacobian. By working backwards from the matrices above, two fourth order tensor, $\bm{A_{\mu}}$ and $\bm{A_{\lambda}}$, can be derived, such that
+
+\begin{equation}
+    \bm{A_{\mu}} = \begin{bmatrix}
+    \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 1 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 \end{bmatrix} &
+      \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+        \begin{bmatrix} 0 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} \\ \end{bmatrix}
+\label{eq_cubmu}
+\end{equation}
+
+and
+
+\begin{equation}
+    \bm{A_{\lambda}} = \begin{bmatrix}
+    \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+    \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+      \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+        \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} &
+        \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} \\
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 \end{bmatrix} &
+          \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix} \\ \end{bmatrix}
+\label{eq_cublambda}
+\end{equation}
+
+such that
+
+\begin{multline}
+    \bm{A_f} \bar{\times}_4 \vect \bm{F} \bar{\times}_3 \vect \bm{F}  \bar{\times}_2 \vect \bm{F}
+    \\ = \left( 4\mu\bm{A_{\mu}} + 2\lambda\bm{A_{\lambda}}\right) \bar{\times}_4 \vect \bm{F} \bar{\times}_3 \vect \bm{F} \bar{\times}_2 \vect \bm{F}
+    \\ = \vect \left( 4\mu\bm{FF^TF} + 2\lambda\tr\left(\bm{F^TF}\right)\bm{F}\right)
+\end{multline}
+
+Then, by replacing $\bm{F} = \left( \frac{\partial \bm{F}}{\partial \bm{x}} \bm{x}\right)$ and pushing $\frac{\partial \bm{F}}{\partial \bm{x}}$ to the left side of the equation, we end up with a fourth order tensor, $\bm{A_{pk}}$, such that
+
+\begin{equation}
+\bm{A_{pk}} = \bm{A_f} \times_4 \vect \left(\frac{\partial \bm{F}}{\partial \bm{x}} \right)
+\times_3 \vect \left(\frac{\partial \bm{F}}{\partial \bm{x}} \right)
+\times_2 \vect \left(\frac{\partial \bm{F}}{\partial \bm{x}} \right)
+\end{equation}
+
+$\bm{A_{pk}}$ is the coefficient for the cubic term in the PK1 equation (\ref{eq_pk1}). To make this a coefficient for internal force, it must be multiplied once more by $\vect \left(\frac{\partial \bm{F}}{\partial \bm{x}} \right)$ (eq. \ref{eq_triforce}):
+
+\begin{equation}
+\bm{A} = \bm{A_{pk}} \times_1 \vect \left(\frac{\partial \bm{F}}{\partial \bm{x}} \right)
+\label{eq_cubicTerm}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Internal Force Coefficients}
 
-An explanation of how to derive the global internal force.
+Now that the coefficients for the internal force for each triangle has been computed, we can create global constant coefficients for internal force in a similar manner as how the global internal force was computed earlier.
+
+\begin{algorithmic}[1]
+    \Function{globalForceConstants}{$null$}
+        \State $P_{global}.setZero()$
+        \State $A_{global}.setZero()$
+        \For{triangle in triangles}
+         \State $P \gets triangle.getQ()$
+         \State $A \gets triangle.getC()$
+          \For{$vertex$ in triangle vertices}
+              \If {$vertex$ is unconstrained}
+                  \State $i \gets global\_index(vertex)$
+                  \For{$vertex_2$ in triangle vertices}
+                    \State $j \gets global\_index(vertex_2)$
+                    \State $P_{global}(i,j) \gets P_{global}(i,j) + P(vertex, vertex_2)$
+                    \For{$vertex_3$ in triangle vertices}
+                          \State $k \gets global\_index(vertex_3)$
+                          \For{$vertex_4$ in triangle vertices}
+                              \State $l \gets global\_index(vertex_4)$
+                              \State $A_{global}(i,j,k,l)  \gets A_{global}(i,j,k,l)+A(vertex, vertex_2, vertex_3, vertex_4)$
+                            \EndFor
+                      \EndFor
+                    \EndFor
+              \EndIf
+            \EndFor
+        \EndFor
+    \EndFunction
+\end{algorithmic}
+
+Like the pseudocode for computing the global stiffness matrix coefficients, the assignment lines are abbreviated in the same way. Refer back to \textbf{Creating the Global Tangent Stiffness Matrix Coefficients} for a refresher.
+
+Also note how a separate global matrix, $\bm{P_{global}}$, was created here, despite the fact the linear internal force coefficient is identitical to the constant force jacobian coefficient for a single triangle. This is because the loops they run through are slightly different - in the pseudocode above, $\bm{Q}$ is added to $\bm{P_{global}}$ so long as the first vertex is unconstrained. In the pseudocode for the stiffness matrix, $\bm{Q}$ is added to $\bm{Q_{global}}$ only if the first \textbf{and} the second vertex are unconstrained. $\bm{P_{global}} \neq \bm{Q_{global}}$!
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating a Deformation Basis}
@@ -651,7 +783,7 @@ An explanation of how to generate a deformation basis.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Reducing the Euler-Lagrange Equation of Motion}
 
-An explanation of how to push U through so that we can reduce the order of our calculations.
+Now that a deformation basis has been generated, it can be used to reduce the order of the Euler-Lagrange equation of motion calculation. The next three subsections explain how these reductions can be done.  
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing the Internal Force}
@@ -668,12 +800,13 @@ of the polynomial.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing All Other Forces}
 
-An explanation of how to reduce all other forces.
+For reducing external force and mass, follow equations \ref{eq_rmass}, \ref{eq_rexternal}. The reduced damping matrix can be calculated after mass and stiffness are reduced, so that
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Running the program}
+\begin{equation}
+  \bm{\tilde{D}} = \alpha\bm{\tilde{M}} - \beta\bm{\tilde{K}}(\bm{q})
+\end{equation}
 
-A brief explanation of how to run the program
+After everything is reduced, run the Newmark integrator exactly as before. Refer back to the section titled \textbf{Implementing the Newmark Integrator} for a reminder of how to implement it.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions}
@@ -684,7 +817,7 @@ Explain how this can probably be optimized further by flattening all tensors.
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{acknowledgment}
 
-Thanks to Barbič for writing the paper and my advisor Theodore Kim.
+Thanks to Barbič et. al for writing the paper and my advisor Theodore Kim.
 
 \end{acknowledgment}
 
