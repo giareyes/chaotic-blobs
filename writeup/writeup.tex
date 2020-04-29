@@ -255,12 +255,50 @@ In computing the force jacobian of a single triangle, the energy hessian is used
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing dF/dx}
 
-An explanation of how to compute DF/Dx.
+Before we can calculate internal force and the force jacobian, we need to find the derivative of F in terms of x. Remember that $F \in \mathbb{R}^{2 \times 2}$ and $x \in \mathbb{R}^6$. This means that
+
+\begin{equation}
+  \begin{split}
+    \frac{\partial F}{\partial x} = \begin{bmatrix} \frac{\partial F}{\partial x_0} & \frac{\partial F}{\partial x_1}
+    & \frac{\partial F}{\partial x_2} & \frac{\partial F}{\partial x_3} & \frac{\partial F}{\partial x_4}
+    & \frac{\partial F}{\partial x_5} \end{bmatrix} \\
+    = \begin{bmatrix} \begin{bmatrix} -1 & -1 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ -1 & -1 \end{bmatrix}
+  & \begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ 1 & 0 \end{bmatrix}
+  & \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ 0 & 1 \end{bmatrix}\end{bmatrix}
+  \end{split}
+\label{eq_dFdx}
+\end{equation}
+
+Notice that this is a vector of matrices, i.e. a third order tensor. While we can use this as a third order tensor, it's easier to vectorize it and treat it as a matrix.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Vectorizing Tensors}
+\subsubsection{Flattening Matrices and Tensors}
 
-An explanation of how to vectorize a tensor, bringing the order down by one.
+Flattening a tensor reduces it into a matrix, and flattening a matrix reduces it into a vector (also called vectorizing). To vectorize a matrix, we append the next column onto the bottom of the previous. So, as an example, if
+
+\bigskip
+\begin{center}
+$A = \begin{bmatrix} 1 & 3 \\ 2 & 4 \end{bmatrix}$
+\end{center}
+
+then
+
+\begin{center}
+$vec(A) = \begin{bmatrix} 1 \\ 2 \\ 3 \\ 4 \end{bmatrix}$
+\end{center}
+
+To flatten a tensor, we do this process on each level - so if we have a fourth order tensor, or a matrix of matrices, we first flatten the outer matrix into a vector of matrices, then vectorize the matrices inside. This step, which is the same for both third and fourth order tensors, can be done as shown below:
+
+\bigskip
+\begin{center}
+$A = \begin{bmatrix} \begin{bmatrix} 1 & 3 \\ 2 & 4 \end{bmatrix} & \begin{bmatrix} 5 & 7 \\ 6 & 8 \end{bmatrix} \end{bmatrix}$
+\end{center}
+
+then
+
+\begin{center}
+$vec(A) = \begin{bmatrix} vec(\begin{bmatrix} 1 & 3 \\ 2 & 4 \end{bmatrix}) & vec(\begin{bmatrix} 5 & 7 \\ 6 & 8 \end{bmatrix}) \end{bmatrix} = \begin{bmatrix} 1 & 5 \\ 2 & 6 \\ 3 & 7 \\ 4 & 8 \end{bmatrix}$
+\end{center}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing Internal Force and the Force Jacobian (The Non-Polynomial Way)}
