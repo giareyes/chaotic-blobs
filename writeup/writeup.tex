@@ -590,6 +590,13 @@ This constant is still for equation~\ref{eq_dpdf}, not the force jacobian. The o
 \\ = \bm{C_{dpdf}} \times_2 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}} \right)^T \times_1 \vect \left( \frac{\partial \bm{F}}{\partial \bm{x}}\right)^T
 \end{multline}
 
+With both the quadratic coefficient and the constant matrix, the force jacobian can now be written as a quadratic polynomial:
+
+\begin{equation}
+\frac{\partial^2 \psi}{\partial \bm{x}^2} = \bm{C} \bar{\times}_4 \vect (\bm{x}) \bar{\times}_3 \vect (\bm{x}) + \bm{Q}
+\label{eq_unreducedQuadratic}
+\end{equation}
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Tangent Stiffness Matrix Coefficients}
 
@@ -739,6 +746,13 @@ $\bm{A_{pk}}$ is the coefficient for the cubic term in the PK1 equation (\ref{eq
 \label{eq_cubicTerm}
 \end{equation}
 
+With both the cubic coefficient and the linear matrix, the internal force can now be written as a cubic polynomial:
+
+\begin{equation}
+\frac{\partial \psi}{\partial \bm{x}} = \bm{A} \bar{\times}_4 \vect (\bm{x}) \bar{\times}_3 \vect (\bm{x}) \bar{\times}_2 \vect (\bm{x})+ \bm{Q}\vect (\bm{x})
+\label{eq_unreducedCubic}
+\end{equation}
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Internal Force Coefficients}
 
@@ -750,7 +764,7 @@ Now that the coefficients for the internal force for each triangle has been comp
         \State $A_{global}.setZero()$
         \For{triangle in triangles}
          \State $P \gets triangle.getQ()$
-         \State $A \gets triangle.getC()$
+         \State $A \gets triangle.getA()$
           \For{$vertex$ in triangle vertices}
               \If {$vertex$ is unconstrained}
                   \State $i \gets global\_index(vertex)$
@@ -776,14 +790,126 @@ Like the pseudocode for computing the global stiffness matrix coefficients, the 
 Also note how a separate global matrix, $\bm{P_{global}}$, was created here, despite the fact the linear internal force coefficient is identitical to the constant force jacobian coefficient for a single triangle. This is because the loops they run through are slightly different - in the pseudocode above, $\bm{Q}$ is added to $\bm{P_{global}}$ so long as the first vertex is unconstrained. In the pseudocode for the stiffness matrix, $\bm{Q}$ is added to $\bm{Q_{global}}$ only if the first \textbf{and} the second vertex are unconstrained. $\bm{P_{global}} \neq \bm{Q_{global}}$!
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Adjusting Polynomials for Displacement}
+
+As mentioned in section 3.4, $\bm{x}$ and $\bm{u}$ are no longer interchangable through the cubic polynomial implementation of computing force.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Adjusting Internal Force}
+
+While it's true that
+
+\begin{center}
+$\bm{R}(\bm{\bar{x}}) = 0$
+\end{center}
+
+the individual terms within the internal force equation are non-zero at rest position $\bm{\bar{x}}$. That is,
+
+\begin{center}
+$\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}} \neq 0$
+
+$\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}} = -\bm{Q} \bm{\bar{x}}$
+\end{center}
+
+Since the terms are non-zero at $\bm{\bar{x}}$, $\bm{u}$ cannot just replace $\bm{x}$ in this equation. We can, however, derive an alternate equation to deal with displacement. The first step is to insert $\bm{\bar{x}} + \bm{u}$ for every $\bm{x}$.
+
+\begin{multline}
+\bm{A} \bar{\times}_4 (\bm{\bar{x}} + \bm{u}) \bar{\times}_3 (\bm{\bar{x}} + \bm{u}) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\\ = (\bm{A} \bar{\times}_4 \bm{\bar{x}}) \bar{\times}_3 (\bm{\bar{x}} + \bm{u}) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\\ + (\bm{A} \bar{\times}_4 \bm{u}) \bar{\times}_3 (\bm{\bar{x}} + \bm{u}) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\label{eq_deconstruct}
+\end{multline}
+
+Looking at the first term,
+
+\begin{equation}
+  \begin{split}
+(\bm{A} \bar{\times}_4 \bm{\bar{x}}) \bar{\times}_3 (\bm{\bar{x}} + \bm{u}) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+ = (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} ) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\\ + (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{u} ) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\\ = (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}})
++ (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{u})
+\\ + (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{\bar{x}})
++ (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u})
+\label{eq_deconstruct1}
+\end{split}
+\end{equation}
+
+Notice that one of the final terms here is $(\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}})$. Since $\bm{R}(\bm{\bar{x}}) = 0$, $(\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}}) = -\bm{Q} \bm{\bar{x}}$, so this term can be ignored.
+
+The second term of equation \ref{eq_deconstruct} can be deconstructed in a similar manner:
+
+\begin{multline}
+(\bm{A} \bar{\times}_4 \bm{u}) \bar{\times}_3 (\bm{\bar{x}} + \bm{u}) \bar{\times}_2 (\bm{\bar{x}}+ \bm{u})
+\\ = (\bm{A} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}})
++ (\bm{A} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{u})
+\\ + (\bm{A} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{\bar{x}})
++ (\bm{A} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u})
+\label{eq_deconstruct2}
+\end{multline}
+
+Notice that the last term is structured like the initial equation for $\bm{x}$, yet we have many extra terms between equations \ref{eq_deconstruct1} and \ref{eq_deconstruct2}. These extra terms form a quadratic term and modify the linear constant. The linear constant for internal force now becomes:
+
+\begin{equation}
+  \bm{P} = \bm{Q} + (\bm{A} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}})
+  + (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_2 \bm{\bar{x}})
+  + (\bm{A} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}})
+\end{equation}
+
+and the new quadratic term is defined as:
+
+\begin{equation}
+  \bm{B} = (\bm{A} \bar{\times}_2 \bm{\bar{x}})
+  + (\bm{A}\bar{\times}_3 \bm{\bar{x}})
+  + (\bm{A} \bar{\times}_4 \bm{\bar{x}})
+\end{equation}
+
+where $\bm{B} \in \mathbb{R}^{6 \times 6 \times 6}$, and is thus a third-order tensor.
+
+With these new terms, the redefined internal force equation for displacement is:
+
+\begin{equation}
+ \frac{\partial \psi}{\partial \bm{u}} = \bm{A} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u}
+ + \bm{B} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u} + \bm{P}\bm{u}
+\end{equation}
+
+The global coefficients can be built the same way as before, with an extra tensor to store values of $\bm{B}$.
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Adjusting the Force Jacobian}
+
+The force jacobian is adjusted using the same method as the internal force. When $\bm{\bar{x}} + \bm{u}$ is substituted for every $\bm{x}$, the resulting force jacobian equation is
+
+\begin{equation}
+ \frac{\partial^2 \psi}{\partial \bm{u}^2} = \bm{C} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}}
+ + \bm{C} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{u} + \bm{C} \bar{\times}_3 \bm{\bar{x}} \bar{\times}_3 \bm{u}
+ + \bm{C} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u}
+\end{equation}
+
+The extra terms here form a new linear term and modify the constant matrix. The constant matrix now becomes:
+
+\begin{equation}
+ \bm{Q_u} = \bm{Q} + \bm{C} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}}
+\end{equation}
+
+and the linear term is defined as:
+
+\begin{equation}
+ \bm{D} = \bm{C} \bar{\times}_4 \bm{\bar{x}} + \bm{C} \bar{\times}_3 \bm{\bar{x}}
+\end{equation}
+
+where $\bm{D}$ is a third-order tensor. 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating a Deformation Basis}
 
-An explanation of how to generate a deformation basis.
+There are many ways to generate a deformation basis. It's a hard, open problem in solid mechanics, as there is no unanimously used algorithm for it. The approach used for this paper was the mass-PCA approach. This was achieved by running the unreduced program to record $r \in \mathbb{R}$ distinct deformations. Each vertex displacement for a single deformation was stored in one column of a matrix, so that the final matrix of deformed coordinates was $\bm{X} \in \mathbb{R}^{2n \times r}$.
+
+After computing this matrix, SVD was run on $\bm{X}$, and the first $r$ columns of the $\bm{U_{SVD}}$ matrix became the deformation basis, $U \in \mathbb{R}^{2n \times r}$. This basis works well for stationary objects, but it does not incorporate translation. To create a basis that allows for translation, [!!! ! PLEASE FINISH THIS !!!!]
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Reducing the Euler-Lagrange Equation of Motion}
 
-Now that a deformation basis has been generated, it can be used to reduce the order of the Euler-Lagrange equation of motion calculation. The next three subsections explain how these reductions can be done.  
+Now that a deformation basis has been generated, it can be used to reduce the order of the Euler-Lagrange equation of motion calculation. The next three subsections explain how these reductions can be done.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing the Internal Force}
