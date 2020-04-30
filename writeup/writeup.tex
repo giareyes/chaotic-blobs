@@ -645,6 +645,12 @@ $\bm{Q_{global}}(i ,j + 1) += \bm{Q}(vertex(x), vertex_2(y))$, and
 $\bm{Q_{global}}(i + 1,j + 1) += \bm{Q}(vertex(y), vertex_2(y))$.
 \end{center}
 
+After all coefficients are precomputed, the global stiffness matrix calculation is as easy as computing:
+
+\begin{equation}
+  \bm{K}(\bm{x}) = \bm{C_{global}} \bar{\times}_4 \bm{x} \bar{\times}_3 \bm{x} + \bm{Q_{global}}
+\end{equation}
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Coefficients for Internal Force}
 
@@ -789,6 +795,12 @@ Like the pseudocode for computing the global stiffness matrix coefficients, the 
 
 Also note how a separate global matrix, $\bm{P_{global}}$, was created here, despite the fact the linear internal force coefficient is identitical to the constant force jacobian coefficient for a single triangle. This is because the loops they run through are slightly different - in the pseudocode above, $\bm{Q}$ is added to $\bm{P_{global}}$ so long as the first vertex is unconstrained. In the pseudocode for the stiffness matrix, $\bm{Q}$ is added to $\bm{Q_{global}}$ only if the first \textbf{and} the second vertex are unconstrained. $\bm{P_{global}} \neq \bm{Q_{global}}$!
 
+After computing coefficients, evaluating the internal force at any point in time is as simple as calculating:
+
+\begin{equation}
+  \bm{R}(\bm{x}) = \bm{A_{global}} \bar{\times}_4 \bm{x} \bar{\times}_3 \bm{x} \bar{\times}_2 \bm{x} + \bm{P_{global}}\bm{x}
+\end{equation}
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Adjusting Polynomials for Displacement}
 
@@ -873,10 +885,16 @@ With these new terms, the redefined internal force equation for displacement is:
  + \bm{B} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u} + \bm{P}\bm{u}
 \end{equation}
 
-The global coefficients can be built the same way as before, with an extra tensor to store values of $\bm{B}$.
+The global coefficients can be built the same way as before, with an extra tensor to store values of $\bm{B}$. With these modified global coefficients, the calculation of global internal force is now:
+
+\begin{equation}
+  \bm{R}(\bm{u}) = \bm{A_{global}} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u}
+  + \bm{B_{global}} \bar{\times}_3 \bm{u} \bar{\times}_2 \bm{u} + \bm{P_{global}}\bm{u}
+  \label{eq_globalForce}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Adjusting the Force Jacobian}
+\subsection{Adjusting the Stiffness Matrix}
 
 The force jacobian is adjusted using the same method as the internal force. When $\bm{\bar{x}} + \bm{u}$ is substituted for every $\bm{x}$, the resulting force jacobian equation is
 
@@ -889,16 +907,32 @@ The force jacobian is adjusted using the same method as the internal force. When
 The extra terms here form a new linear term and modify the constant matrix. The constant matrix now becomes:
 
 \begin{equation}
- \bm{Q_u} = \bm{Q} + \bm{C} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}}
+ \bm{Q} = \bm{Q} + \bm{C} \bar{\times}_4 \bm{\bar{x}} \bar{\times}_3 \bm{\bar{x}}
 \end{equation}
 
 and the linear term is defined as:
 
 \begin{equation}
- \bm{D} = \bm{C} \bar{\times}_4 \bm{\bar{x}} + \bm{C} \bar{\times}_3 \bm{\bar{x}}
+ \bm{G} = \bm{C} \bar{\times}_4 \bm{\bar{x}} + \bm{C} \bar{\times}_3 \bm{\bar{x}}
 \end{equation}
 
-where $\bm{D}$ is a third-order tensor. 
+where $\bm{G}$ is a third-order tensor.
+
+With these modifications, the new force jacobian equation is:
+
+\begin{equation}
+\frac{\partial^2 \psi}{\partial \bm{u}^2} = \bm{C} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u}
++ \bm{G} \bar{\times}_3 \bm{u} + \bm{Q_u}
+\end{equation}
+
+The global coefficients can be built the same way as before, with an extra tensor to store values of $\bm{G}$. Thus, the calculation of the global stiffness matrix is now:
+
+\begin{equation}
+  \bm{K}(\bm{u}) = \bm{C_{global}} \bar{\times}_4 \bm{u} \bar{\times}_3 \bm{u}
+  + \bm{G_{global}} \bar{\times}_3 \bm{u} + \bm{Q_{global}}
+  \label{eq_globalStiffness}
+\end{equation}
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating a Deformation Basis}
 
@@ -914,14 +948,52 @@ Now that a deformation basis has been generated, it can be used to reduce the or
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing the Internal Force}
 
-An explanation of how to reduce the calculation of the internal forces, changing the coefficients
-of the polynomial.
+In order to reduce the internal forces the cubic polynomial way, the displacement adjusted formula must be used. Assuming that equation \ref{eq_globalForce} is used, reducing internal force is as simple as reducing every precomputed coefficient:
+
+\begin{equation}
+  \bm{\tilde{A}_{global}} = \bm{A_{global}} \times_4 \bm{U}^T  \times_3 \bm{U}^T  \times_2 \bm{U}^T  \times_1 \bm{U}^T
+\end{equation}
+
+\begin{equation}
+  \bm{\tilde{B}_{global}} = \bm{B_{global}} \times_3 \bm{U}^T  \times_2 \bm{U}^T  \times_1 \bm{U}^T
+\end{equation}
+
+\begin{equation}
+  \bm{\tilde{P}_{global}} = \bm{U}^T \bm{P_{global}} \bm{U}
+\end{equation}
+
+With these reduced coefficients, the reduced internal force is:
+
+\begin{equation}
+  \bm{\tilde{R}}(\bm{q}) = \bm{\tilde{A}_{global}} \bar{\times}_4 \bm{q} \bar{\times}_3 \bm{q} \bar{\times}_2 \bm{q}
+  + \bm{\tilde{B}_{global}} \bar{\times}_3 \bm{q} \bar{\times}_2 \bm{q} + \bm{\tilde{P}_{global}}\bm{q}
+  \label{eq_reducedForce}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing the Global Tangent Stiffness Matrix}
 
-An explanation of how to reduce the calculation of the stiffness, changing the coefficients
-of the polynomial.
+In order to reduce the tangent stiffness matrix the polynomial way, the displacement adjusted formula must be used. Assuming that equation \ref{eq_globalStiffness} is used, reducing the stiffness matrix is as simple as reducing every precomputed coefficient:
+
+\begin{equation}
+  \bm{\tilde{C}_{global}} = \bm{C_{global}} \times_4 \bm{U}^T  \times_3 \bm{U}^T  \times_2 \bm{U}^T  \times_1 \bm{U}^T
+\end{equation}
+
+\begin{equation}
+  \bm{\tilde{G}_{global}} = \bm{G_{global}} \times_3 \bm{U}^T  \times_2 \bm{U}^T  \times_1 \bm{U}^T
+\end{equation}
+
+\begin{equation}
+  \bm{\tilde{Q}_{global}} = \bm{U}^T \bm{Q_{global}} \bm{U}
+\end{equation}
+
+With these reduced coefficients, the reduced stiffness matrix is:
+
+\begin{equation}
+  \bm{\tilde{K}}(\bm{q}) = \bm{\tilde{C}_{global}} \bar{\times}_4 \bm{q} \bar{\times}_3 \bm{q}
+  + \bm{\tilde{G}_{global}} \bar{\times}_3 \bm{q} + \bm{\tilde{Q}_{global}}
+  \label{eq_reducedStiffness}
+\end{equation}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing All Other Forces}
