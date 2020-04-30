@@ -21,7 +21,8 @@
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
-{\it In Real-Time Subspace Integration for Reduced-Order St. Venant-Kirchhoff Deformable Models by Barbič and James \cite{barbic}, a faster, more efficient method for simulating deformable solids was proposed. These speedups were achieved through two modifications - reducing the dimensions of the Euler-Lagrange equation of motion with a reduced deformation basis, and precomputing coefficients for a polynomial approach to solving the internal force and the tangent stiffness matrix. While the results of this paper were incredible, they are hard to reproduce, as it is hard to decipher exactly what was done to reach the end result. The goal of this paper is to document each step taken to recreate the results of their 2005 paper, so that others may understand and replicate their work. This paper also proposes a new, tensor algebraic approach to solving the internal force and stiffness matrix polynomials. In order to do this, a new tensor n-mode product rule was defined
+{\it In Real-Time Subspace Integration for Reduced-Order St. Venant-Kirchhoff Deformable Models by Barbič and James, a faster, more efficient method for simulating nonlinear deformable models was presented \cite{barbic}. These speedups were achieved through two modifications - reducing the dimensions of the Euler-Lagrange equation of motion with a reduced deformation basis, and precomputing coefficients for a polynomial approach to solving the internal force and the tangent stiffness matrix. While the results of this paper are incredible, they are hard to reproduce, as it is hard to decipher exactly what was done to reach the end result. In particular, the explanations for the precomputed coefficients are cryptic, with confusing notation and unknown operators. The goal of this paper is to document each step taken to recreate the results of Barbič and James’s 2005 paper, so that others may understand and replicate their work. With this goal in mind, the paper starts from the very beginning, by explaining the problem at hand, defining all the terms of the equations that will be used, and suggesting methods of implementation. This paper also proposes a new, tensor algebraic approach to solving the internal force and stiffness matrix polynomials, as opposed to the method used in the 2005 paper. Since this is a new method, and this paper aims to allow others to follow along, all derivations of terms are included in this work. In order to ensure all readers can follow along, this paper includes an overview of tensors, including all of the tensor mode product rules used and/or derived in order to achieve results. By providing all equations used, writing thorough explanations of each process, and including pseudocode, hopefully any reader with sufficient background in computer physics simulations can reproduce this work.
+
 }
 \end{abstract}
 
@@ -111,7 +112,7 @@ specified model, and walk through every step until an actual animation is create
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{An Overview of Tensors}
 
-Before going into the details of how to implement reduced-order St. Venant-Kirchfoff deformable models, it's important to review tensors, as they show up in many places throughout this paper. The following explanation is influenced by Kolda and Bader's paper on Tensor Decomposition and Applications \cite{tensors}, and contains extra findings that emerged through implementation.
+Before going into the details of how to implement reduced-order St. Venant-Kirchhoff deformable models, it's important to review tensors, as they show up in many places throughout this paper. The following explanation is influenced by Kolda and Bader's paper on Tensor Decomposition and Applications \cite{tensors}, and contains extra findings that emerged through implementation.
 
 A \textbf{tensor} is a multidimensional array. For example, a matrix is a second order tensor, and a vector is a first order tensor. An $N$th order tensor is an array of $N$ dimensions, and thus indexed using $N$ indices.
 
@@ -139,14 +140,14 @@ This works exactly as it seems like it would. For $a \in \mathbb{R}$, $\bm{X} \i
 
 \subsection{n-Mode Vector Product}
 
-When a tensor is multiplied by a vector, its order reduces by 1. An n-mode vector product of a tensor $\bm{X} \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a vector $\bm{v} \in \mathbb{R}^{I_n}$ is denoted by $\bm{X} \bar{\times}_n \bm{v}$. Elementwise,
+When a tensor is multiplied by a vector, its order reduces by 1. An n-mode vector product of a tensor $\bm{X} \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a vector $\bm{v} \in \mathbb{R}^{I_n}$ is denoted by $\bm{X} \bar{\times}_n \bm{v}$. Element-wise,
 
 \begin{equation}
 (\bm{X} \bar{\times}_n \bm{v} )_{i_1, ..., i_{n-1}, i{n+1}, ..., i_N} = \sum_{i_n = 1}^{I_n} x_{i_1, i_2, ..., i_N}\cdot v_{i_n}
 \end{equation}
 
 So the resulting tensor $(\bm{X} \bar{\times}_n \bm{v} ) \in \mathbb{R}^{I_1 \times ... \times I_{n-1} \times I_{n+1} \times ... \times I_N}$. A visual representation of a 3-mode vector product can be seen in Figure~\ref{fig_ex3.png}.
-For n-mode vector products, precedence matters, since it change which dimension of the tensor is collapsed. Therefore, if $m < n$,
+For n-mode vector products, precedence matters, since it changes which dimension of the tensor is collapsed. Therefore, if $m < n$,
 
 \begin{equation}
 \bm{X} \bar{\times}_m \bm{a} \bar{\times}_n \bm{b} = (\bm{X} \bar{\times}_m \bm{a}) \bar{\times}_{n-1} \bm{b} = (\bm{X} \bar{\times}_n \bm{b}) \bar{\times}_m \bm{a}
@@ -156,7 +157,7 @@ For n-mode vector products, precedence matters, since it change which dimension 
 This is an important rule that will be used later.
 
 \subsection{n-Mode Matrix Product}
-When a tensor is multiplied by a matrix, one of its dimensions changes. An n-mode matrix product of a tensor $\bm{X} \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a matrix $\bm{U} \in \mathbb{R}^{J \times I_n}$ is denoted by $\bm{X} \times_n \bm{U}$. Elementwise, this multiplication results in:
+When a tensor is multiplied by a matrix, one of its dimensions changes. An n-mode matrix product of a tensor $\bm{X} \in \mathbb{R}^{I_1 \times I_2 \times ... \times I_N}$ with a matrix $\bm{U} \in \mathbb{R}^{J \times I_n}$ is denoted by $\bm{X} \times_n \bm{U}$. Element-wise, this multiplication results in:
 
 \begin{equation}
 (\bm{X} \times_n \bm{U} )_{i_1, ..., i_{n-1}, j, i{n+1}, ..., i_N} = \sum_{i_n = 1}^{I_n} x_{i_1, i_2, ..., i_N}\cdot u_{j,i_n}
@@ -164,6 +165,7 @@ When a tensor is multiplied by a matrix, one of its dimensions changes. An n-mod
 
 and the resulting tensor $(\bm{X} \times_n \bm{U} ) \in \mathbb{R}^{I_1 \times ... \times I_{n-1} \times J \times I_{n+1} \times ... \times I_N}$.
 
+\bigskip
 If $n \neq m$, then
 
 \begin{equation}
@@ -188,14 +190,14 @@ These two rules will also be used later. Another important rule which will be us
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Creating the Triangles}
 
-When modelling solids using a discrete method, the model is represented by a mesh of polygons. In this paper, triangles were
+When modeling solids using a discrete method, the model is represented by a mesh of polygons. In this paper, triangles were
 used, so all results of this paper are based on triangle calculations.
 
 In the code for this paper, a triangle object was created for cleaner implementation. Important variables to keep track of are:
 \begin{enumerate}
   \item a vector of rest vertices. This should stay constant throughout the simulation.
   \item a vector of actual positions, which update as the whole mesh moves.
-  \item a material model of some sort, to keep track of lambda and mu values for force calculations.
+  \item a material model of some sort, to keep track of $\lambda$ and $\mu$ values for force calculations.
   \item rest area; this is used in calculating the internal force and stiffness matrix.
   \item precomputed coefficients for the cubic polynomial interpretation of internal force and quadratic polynomial
   for the tangent stiffness matrix. This will be discussed in a later section.
@@ -242,7 +244,7 @@ A St. Venant-Kirchhoff deformable model is defined by the StVK strain energy, wh
 \label{eq_stvk}
 \end{equation}
 
-, and $\lambda$ and $\mu$ are Lamé coefficients.
+and $\lambda$ and $\mu$ are Lamé coefficients.
 
 In computing the internal force of a single triangle, the Piola-Kirchhoff stress tensor, i.e. the derivative of the strain energy by the deformation gradient, is used. The Piola-Kirchhoff stress tensor is
 
@@ -269,7 +271,7 @@ Before we can calculate internal force and the force jacobian, we need to find t
   \begin{split}
     \frac{\partial \bm{F}}{\partial \bm{x}} = \begin{bmatrix} \frac{\partial \bm{F}}{\partial x_0} & \frac{\partial \bm{F}}{\partial x_1}
     & \frac{\partial \bm{F}}{\partial x_2} & \frac{\partial \bm{F}}{\partial x_3} & \frac{\partial \bm{F}}{\partial x_4}
-    & \frac{\partial \bm{F}}{\partial x_5} \end{bmatrix} \\
+    & \frac{\partial \bm{F}}{\partial x_5} \end{bmatrix} \\ \\
     = \begin{bmatrix} \begin{bmatrix} -1 & -1 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ -1 & -1 \end{bmatrix}
   & \begin{bmatrix} 1 & 0 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ 1 & 0 \end{bmatrix}
   & \begin{bmatrix} 0 & 1 \\ 0 & 0 \end{bmatrix} & \begin{bmatrix} 0 & 0 \\ 0 & 1 \end{bmatrix}\end{bmatrix}
@@ -325,7 +327,7 @@ where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_pk1}, respect
 \label{eq_trijacob}
 \end{equation}
 
-where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_dpdf}. Notice how $\bm{x}$, or current vertex placement, and $\bm{u}$, vertex \textit{displacement}, are used interchangably here. In general, this is possible because the interal force at rest position $\bm{\bar{x}}$ is $0$, and $\bm{x} = \bm{\bar{x}} + \bm{u}$. However, it is important to note, because these will \textbf{not} be interchangable in the cubic polynomial approach.
+where the terms are defined by equations \ref{eq_dFdx} and \ref{eq_dpdf}. Notice how $\bm{x}$, or current vertex placement, and $\bm{u}$, vertex \textit{displacement}, are used interchangeably here. In general, this is possible because the internal force at rest position $\bm{\bar{x}}$ is $0$, and $\bm{x} = \bm{\bar{x}} + \bm{u}$. However, it is important to note, because these will \textbf{not} be interchangeable in the cubic polynomial approach.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -341,7 +343,7 @@ Now that a triangle object has been established, a triangle mesh can be built. I
   \item a vector of vertex displacements.
   \item a vector of vertex indices representing which vertices are \textbf{constrained}.
   \item a vector of vertex indices representing which vertices are \textbf{unconstrained}.
-  \item a vector for inteneral force.
+  \item a vector for internal force.
   \item a vector for external force.
   \item a mass matrix.
   \item a vector for velocity and a vector for acceleration.
@@ -352,13 +354,14 @@ Now that a triangle object has been established, a triangle mesh can be built. I
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementing the Euler-Lagrange Equation of Motion}
 
-After setting up the triangle mesh and applying some kind of external force,the system is animated by solving the Euler-Lagrange Equation of Motion. By solving equation~\ref{eq_motion}, the displacements for the next time step can be found and added to the vertex placements. In order to do this, each term of the equation must be calculated.
+After setting up the triangle mesh and applying some kind of external force, the system is animated by solving the Euler-Lagrange Equation of Motion. By solving equation~\ref{eq_motion}, the displacements for the next time step can be found and added to the vertex placements. In order to do this, each term of the equation must be calculated.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing Internal Force}
 
 While this step isn't necessary for the cubic polynomial approach, the methods are similar. In the previous section, the individual internal force for each triangle was calculated using equation~\ref{eq_triforce}. To calculate the global internal force, $\bm{R}(\bm{u}) \in \mathbb{R}^{2n}$, all of the individual internal forces are added up. This can be done by looping through every triangle, then looping through every vertex of the triangle. For each vertex, find where it belongs in the global context, and, if it is not constrained, add the force to the global vector. Here's an example through pseudocode below:
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{globalInternalForce}{$null$}
         \State $global\_vector.setZero()$
@@ -379,6 +382,7 @@ While this step isn't necessary for the cubic polynomial approach, the methods a
 
 The process here is similar to the process of calculating the global internal force. In the previous section, the individual force jacobian for each triangle was calculated using equation~\ref{eq_trijacob}. To calculate the global stiffness matrix, $\bm{K}(\bm{u}) \in \mathbb{R}^{2n \times 2n}$, all of the individual force jacobians are added up. This can be done by looping through every triangle, then looping through every vertex of the triangle twice. For each vertex, find where it belongs in the global context, and, if it is not constrained, add the force to the global stiffness matrix. Here's an example through pseudocode below:
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{globalStiffnessMatrix}{$null$}
         \State $global\_stiffness.setZero()$
@@ -419,8 +423,9 @@ After computing the global stiffness matrix, this should be straightforward. The
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Implementing the Newmark Integrator}
 
-After calculating all of the individual terms in the Euler-Lagrange equation of motion, the equation can be solved for a given timestep using an implicit Newmark integrator. Implicit Newmark integrators are second-order accurate, and they only require one step, instead of having to solve the equation in a few iterations. While the pseudocode below is written for unreduced displacements, this iteration stays exactly the same when $u$ is replaced with $q$.
+After calculating all of the individual terms in the Euler-Lagrange equation of motion, the equation can be solved for a given time-step using an implicit Newmark integrator. Implicit Newmark integrators are second-order accurate, and they only require one step, instead of having to solve the equation in a few iterations. While the pseudocode below is written for unreduced displacements, this iteration stays exactly the same when $u$ is replaced with $q$.
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{NewmarkIntegrator}{$null$}
       \State $\bm{u_{i + 1}} \gets \bm{u_i}$
@@ -436,6 +441,7 @@ After calculating all of the individual terms in the Euler-Lagrange equation of 
     \EndFunction
 \end{algorithmic}
 
+\bigskip
 The alpha constants in this integrator are determined by the equations
 
 \begin{center}
@@ -450,9 +456,9 @@ Where $0 \leq \tilde{\beta} \leq 0.5$ and $0 \leq \tilde{\gamma} \leq 1$. We cho
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Generating Precomputed Coefficients}
 
-At this point in the paper, a fully function simulator of St. Venant-Kirchhoff deformable models can be created; however, they are still unreduced and lack any precomputation. If precomputation does not interest you, feel free to skip to the section titled \textbf{Generating a Deformation Basis} - after creating a deformation basis, reducing everything is as simple as following equations \ref{eq_basisreduction} - \ref{eq_rstiffness}.
+At this point in the paper, a fully function simulator of St. Venant-Kirchhoff deformable models can be created; however, they are still unreduced and lack any pre-computation. If pre-computation does not interest you, feel free to skip to the section titled \textbf{Generating a Deformation Basis} - after creating a deformation basis, reducing everything is as simple as following equations \ref{eq_basisreduction} - \ref{eq_rstiffness}.
 
-For simplicity, we derived the precomputed constant coefficients before reducing the equation. In order to have the ability to precompute constant coefficients, all variables must be extractable. In the case of unreduced St. Venant Kirchhoff models, this means that we should be able to separate vertex positions, $x$, out of the internal force and stiffness matrix calculation. Again, for simplicity, we began by separating $x$ from the internal force equation \ref{eq_triforce} and force jacobian equation \ref{eq_trijacob} for an individual triangle, then created global constants similar to how the global internal force and global stiffness matrix were built in sections 5.1 and 5.2.
+For simplicity, we derived the precomputed constant coefficients before reducing the equation. In order to have the ability to precompute constant coefficients, all variables must be extractable. In the case of unreduced St. Venant-Kirchhoff models, this means that we should be able to separate vertex positions, $x$, out of the internal force and stiffness matrix calculation. Again, for simplicity, we began by separating $x$ from the internal force equation \ref{eq_triforce} and force jacobian equation \ref{eq_trijacob} for an individual triangle, then created global constants similar to how the global internal force and global stiffness matrix were built in sections 5.1 and 5.2.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Coefficients for the Tangent Stiffness Matrix}
@@ -600,8 +606,9 @@ With both the quadratic coefficient and the constant matrix, the force jacobian 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Tangent Stiffness Matrix Coefficients}
 
-Now that the constant terms for the force jacobian for each triangle has been computed, we can create global constant terms for the tangent stiffness matrix in a similar manner as how the global tangent stiffness matrix was computed earlier.
+Now that the constant terms for the force jacobian for each triangle have been computed, we can create global constant terms for the tangent stiffness matrix in a similar manner to how the global tangent stiffness matrix was computed earlier.
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{globalStiffnessConstants}{$null$}
         \State $Q_{global}.setZero()$
@@ -631,9 +638,9 @@ Now that the constant terms for the force jacobian for each triangle has been co
     \EndFunction
 \end{algorithmic}
 
-Note that the global coefficients match the order of the triangle coefficients; that is, the constant term, $\bm{Q_{global}}$ is a matrix, while the global coefficient for the quadratic term, $\bm{C_{global}}$, is a fourth-order tensor. The difference is in their dimensions; while $\bm{Q} \in \mathbb{R}^{6 \times 6}$, $\bm{Q_{global}} \in \mathbb{R}^{2n \times 2n}$, and while  $\bm{C} \in \mathbb{R}^{6 \times 6 \times 6 \times 6}$, $\bm{C_{global}} \in \mathbb{R}^{2n \times 2n \times 2n \times 2n}$.
+Note that the global coefficients match the order of the triangle coefficients; that is, the constant term, $\bm{Q_{global}}$, is a matrix, while the global coefficient for the quadratic term, $\bm{C_{global}}$, is a fourth-order tensor. The difference is in their dimensions; while $\bm{Q} \in \mathbb{R}^{6 \times 6}$, $\bm{Q_{global}} \in \mathbb{R}^{2n \times 2n}$, and while  $\bm{C} \in \mathbb{R}^{6 \times 6 \times 6 \times 6}$, $\bm{C_{global}} \in \mathbb{R}^{2n \times 2n \times 2n \times 2n}$.
 
-Also note that this pseudocode is abbreviated; while it only shows adding $\bm{C}$ and $\bm{Q}$ to one position in the global coefficients, you actually have to add it to every possible combination of the current vertices's $x$ and $y$ coordinates. For example, if $vertex$ and $vertex_2$ are unconstrained, then
+Also note that this pseudocode is abbreviated; while it only shows adding $\bm{C}$ and $\bm{Q}$ to one position in the global coefficients, you actually have to add it to every possible combination of the current vertices' $x$ and $y$ coordinates. For example, if $vertex$ and $vertex_2$ are unconstrained, then
 
 \begin{center}
 $\bm{Q_{global}}(i,j) += \bm{Q}(vertex(x), vertex_2(x))$,
@@ -762,8 +769,9 @@ With both the cubic coefficient and the linear matrix, the internal force can no
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Creating the Global Internal Force Coefficients}
 
-Now that the coefficients for the internal force for each triangle has been computed, we can create global constant coefficients for internal force in a similar manner as how the global internal force was computed earlier.
+Now that the coefficients for the internal force for each triangle has been computed, we can create global constant coefficients for internal force in a similar manner to how the global internal force was computed earlier.
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{globalForceConstants}{$null$}
         \State $P_{global}.setZero()$
@@ -793,7 +801,7 @@ Now that the coefficients for the internal force for each triangle has been comp
 
 Like the pseudocode for computing the global stiffness matrix coefficients, the assignment lines are abbreviated in the same way. Refer back to \textbf{Creating the Global Tangent Stiffness Matrix Coefficients} for a refresher.
 
-Also note how a separate global matrix, $\bm{P_{global}}$, was created here, despite the fact the linear internal force coefficient is identitical to the constant force jacobian coefficient for a single triangle. This is because the loops they run through are slightly different - in the pseudocode above, $\bm{Q}$ is added to $\bm{P_{global}}$ so long as the first vertex is unconstrained. In the pseudocode for the stiffness matrix, $\bm{Q}$ is added to $\bm{Q_{global}}$ only if the first \textbf{and} the second vertex are unconstrained. $\bm{P_{global}} \neq \bm{Q_{global}}$!
+Also note how a separate global matrix, $\bm{P_{global}}$, was created here, despite the fact the linear internal force coefficient is identical to the constant force jacobian coefficient for a single triangle. This is because the loops they run through are slightly different - in the pseudocode above, $\bm{Q}$ is added to $\bm{P_{global}}$ so long as the first vertex is unconstrained. In the pseudocode for the stiffness matrix, $\bm{Q}$ is added to $\bm{Q_{global}}$ only if the first \textbf{and} the second vertex are unconstrained. $\bm{P_{global}} \neq \bm{Q_{global}}$!
 
 After computing coefficients, evaluating the internal force at any point in time is as simple as calculating:
 
@@ -804,7 +812,7 @@ After computing coefficients, evaluating the internal force at any point in time
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Adjusting Polynomials for Displacement}
 
-As mentioned in section 3.4, $\bm{x}$ and $\bm{u}$ are no longer interchangable through the cubic polynomial implementation of computing force.
+As mentioned in section 3.4, $\bm{x}$ and $\bm{u}$ are no longer interchangeable through the cubic polynomial implementation of computing force.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Adjusting Internal Force}
@@ -940,10 +948,11 @@ There are many ways to generate a deformation basis. It's a hard, open problem i
 
 After computing this matrix, SVD was run on $\bm{X}$, and the first $r$ columns of the $\bm{U_{SVD}}$ matrix became the deformation basis, $U \in \mathbb{R}^{2n \times r}$. This basis works well for stationary objects, but it does not incorporate translation. To create a basis that allows for translation, create two vectors $\bm{t_x}, \bm{t_y} \in \mathbb{R}^{2n}$, such that
 $\bm{t_x}[i] = 1$ when $i$ is an x coordinate, and $0$ otherwise;
-and $\bm{t_y}[i] = 1$ when $i$ is an y coordinate, and $0$ otherwise.
+and $\bm{t_y}[i] = 1$ when $i$ is a y coordinate, and $0$ otherwise.
 
 Normalize both $\bm{t_x}$ and $\bm{t_y}$, then append them so they are the first two columns of $\bm{U}$. Then, adjust every column that is not the translation columns, as shown below:
 
+\bigskip
 \begin{algorithmic}[1]
     \Function{addTranslation}{$null$}
         \For{$\bm{c} \in \bm{U}$}
@@ -1013,7 +1022,7 @@ With these reduced coefficients, the reduced stiffness matrix is:
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Reducing All Other Forces}
 
-For reducing external force and mass, follow equations \ref{eq_rmass}, \ref{eq_rexternal}. The reduced damping matrix can be calculated after mass and stiffness are reduced, so that
+For reducing external force and mass, follow equations \ref{eq_rmass} and \ref{eq_rexternal}. The reduced damping matrix can be calculated after mass and stiffness are reduced, so that
 
 \begin{equation}
   \bm{\tilde{D}} = \alpha\bm{\tilde{M}} - \beta\bm{\tilde{K}}(\bm{q})
