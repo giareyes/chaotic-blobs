@@ -938,7 +938,22 @@ The global coefficients can be built the same way as before, with an extra tenso
 
 There are many ways to generate a deformation basis. It's a hard, open problem in solid mechanics, as there is no unanimously used algorithm for it. The approach used for this paper was the mass-PCA approach. This was achieved by running the unreduced program to record $r \in \mathbb{R}$ distinct deformations. Each vertex displacement for a single deformation was stored in one column of a matrix, so that the final matrix of deformed coordinates was $\bm{X} \in \mathbb{R}^{2n \times r}$.
 
-After computing this matrix, SVD was run on $\bm{X}$, and the first $r$ columns of the $\bm{U_{SVD}}$ matrix became the deformation basis, $U \in \mathbb{R}^{2n \times r}$. This basis works well for stationary objects, but it does not incorporate translation. To create a basis that allows for translation, [!!! ! PLEASE FINISH THIS !!!!]
+After computing this matrix, SVD was run on $\bm{X}$, and the first $r$ columns of the $\bm{U_{SVD}}$ matrix became the deformation basis, $U \in \mathbb{R}^{2n \times r}$. This basis works well for stationary objects, but it does not incorporate translation. To create a basis that allows for translation, create two vectors $\bm{t_x}, \bm{t_y} \in \mathbb{R}^{2n}$, such that
+$\bm{t_x}[i] = 1$ when $i$ is an x coordinate, and $0$ otherwise;
+and $\bm{t_y}[i] = 1$ when $i$ is an y coordinate, and $0$ otherwise.
+
+Normalize both $\bm{t_x}$ and $\bm{t_y}$, then append them so they are the first two columns of $\bm{U}$. Then, adjust every column that is not the translation columns, as shown below:
+
+\begin{algorithmic}[1]
+    \Function{addTranslation}{$null$}
+        \For{$\bm{c} \in \bm{U}$}
+          \If{$\bm{c}$ is not $\bm{t_x}$ or $\bm{t_y}$}
+          \State $ \bm{c} \gets \bm{c} -  \bm{t_x}^T \bm{c} \bm{t_x}$
+          \State $ \bm{c} \gets \bm{c} -  \bm{t_y}^T \bm{c} \bm{t_y}$
+          \EndIf
+        \EndFor
+    \EndFunction
+\end{algorithmic}
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Reducing the Euler-Lagrange Equation of Motion}
@@ -1007,15 +1022,16 @@ For reducing external force and mass, follow equations \ref{eq_rmass}, \ref{eq_r
 After everything is reduced, run the Newmark integrator exactly as before. Refer back to the section titled \textbf{Implementing the Newmark Integrator} for a reminder of how to implement it.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Conclusions}
+\section{Discussion}
 
-End it by explaining how we hope this helps anyone who wants to try implementing this on their own.
-Explain how this can probably be optimized further by flattening all tensors.
+Hopefully, this paper has been clear enough that it is now possible to reproduce this work. While the results from this paper do speed up deformable model simulations, there are more ways to optimize this work. Unlike Barbič's original paper, this approach uses tensors and tensor mode products, which do not exist in current coding libraries. While we implemented our own version of third and fourth order tensors, it was not the most efficient implementation possible. Through careful tensor construction, there must be more efficient ways of implementing mode products.
+
+Additionally, there is the possibility that some of the tensors this paper uses can be flattened in some way. Most of the tensors are sparse, and storing the entire structure full of zeros is a waste of space and computation time.
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{acknowledgment}
 
-Thanks to Barbič et. al for writing the paper and my advisor Theodore Kim.
+Thanks to Barbič et. al for writing Real-Time Subspace Integration for Reduced-Order St. Venant-Kirchhoff Deformable Models. Special thanks to Theodore Kim, for introducing this field of computer graphics and advising this project throughout the semester.
 
 \end{acknowledgment}
 
