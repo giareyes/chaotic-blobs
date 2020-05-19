@@ -30,11 +30,9 @@ void TRIANGLE_MESH::buildBlob(const Real xPos, int sceneNum)
   _unconstrainedVertices.clear();
 
   // build bottom (constrained) vertices
-  vector<VEC2> blobButt;
   for(int i = 0; i < 5; i++)
   {
     VEC2 v0(xPos + 0.1*i, -0.35);
-    blobButt.push_back(v0);
     _vertices.push_back(v0);
     _restVertices.push_back(v0);
     _constrainedVertices.push_back(i);
